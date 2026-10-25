@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useState } from 'react';
 import {
   StyleSheet,
   Text,
@@ -6,8 +6,14 @@ import {
   Modal,
   TouchableOpacity,
   Pressable,
+  Alert,
+  ActivityIndicator,
+  Platform,
 } from 'react-native';
-import { QrCode, Printer, X, Check } from 'lucide-react-native';
+import QRCode from 'react-native-qrcode-svg';
+import * as Sharing from 'expo-sharing';
+import * as FileSystem from 'expo-file-system/legacy';
+import { Download, Printer, X, Check } from 'lucide-react-native';
 import { EquipmentItem, WIGO_COLORS, WIGO_METRICS } from '@/constants/wigo-theme';
 
 interface WigoQrModalProps {
@@ -18,17 +24,73 @@ interface WigoQrModalProps {
 }
 
 export function WigoQrModal({ visible, item, onClose, onPrint }: WigoQrModalProps) {
-  const [printed, setPrinted] = React.useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const qrRef = useRef<any>(null);
 
   if (!item) return null;
 
-  const handlePrint = () => {
-    setPrinted(true);
-    onPrint?.();
-    setTimeout(() => {
-      setPrinted(false);
-      onClose();
-    }, 1200);
+  // Standard encoded identifier: wigo:item:{id}
+  const qrValue = `wigo:item:${item.id}`;
+
+  const handleSaveOrShare = async () => {
+    if (!qrRef.current) return;
+
+    try {
+      setIsProcessing(true);
+
+      qrRef.current.toDataURL(async (data: string) => {
+        try {
+          if (Platform.OS === 'web') {
+            // Web download support
+            const a = document.createElement('a');
+            a.href = `data:image/png;base64,${data}`;
+            a.download = `WIGO-${item.sku || item.id}-QR.png`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+
+            setSuccess(true);
+            setTimeout(() => {
+              setSuccess(false);
+              onClose();
+            }, 1200);
+            return;
+          }
+
+          // Native mobile: Save image to file system and trigger share/save sheet
+          const filename = `${FileSystem.cacheDirectory ?? ''}QR_${item.sku || item.id}.png`;
+          await FileSystem.writeAsStringAsync(filename, data, {
+            encoding: FileSystem.EncodingType.Base64,
+          });
+
+          const isAvailable = await Sharing.isAvailableAsync();
+          if (isAvailable) {
+            await Sharing.shareAsync(filename, {
+              mimeType: 'image/png',
+              dialogTitle: `QR Code for ${item.name}`,
+              UTI: 'public.png',
+            });
+          }
+
+          setSuccess(true);
+          onPrint?.();
+          setTimeout(() => {
+            setSuccess(false);
+            onClose();
+          }, 1200);
+        } catch (err: any) {
+          console.error('Error exporting QR:', err);
+          Alert.alert('Save Failed', 'Unable to export QR code image. Please try again.');
+        } finally {
+          setIsProcessing(false);
+        }
+      });
+    } catch (err: any) {
+      console.error('Error capturing QR:', err);
+      setIsProcessing(false);
+      Alert.alert('Error', 'Failed to generate QR image.');
+    }
   };
 
   return (
@@ -45,7 +107,7 @@ export function WigoQrModal({ visible, item, onClose, onPrint }: WigoQrModalProp
             <View style={styles.printerBadge}>
               <View style={styles.statusDot} />
               <Printer size={13} color={WIGO_COLORS.statusGreen} strokeWidth={2} />
-              <Text style={styles.printerBadgeText}>{WIGO_METRICS.printerModel} Online</Text>
+              <Text style={styles.printerBadgeText}>{WIGO_METRICS.printerModel} Ready</Text>
             </View>
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
               <X size={16} color={WIGO_COLORS.textDark} strokeWidth={2} />
@@ -59,31 +121,42 @@ export function WigoQrModal({ visible, item, onClose, onPrint }: WigoQrModalProp
               <Text style={styles.skuTag}>{item.sku}</Text>
             </View>
 
+            {/* Generated QR Code SVG */}
             <View style={styles.qrContainer}>
-              <QrCode size={110} color={WIGO_COLORS.textDark} strokeWidth={1.5} />
+              <QRCode
+                value={qrValue}
+                size={140}
+                color={WIGO_COLORS.textDark}
+                backgroundColor="#FFFFFF"
+                getRef={(c) => (qrRef.current = c)}
+              />
             </View>
 
             <Text style={styles.labelTitle} numberOfLines={2}>
               {item.name}
             </Text>
             <Text style={styles.labelCost}>Value: {item.cost}</Text>
+            <Text style={styles.taglineText}>ID: {item.id.slice(0, 8)}... (50×30mm)</Text>
           </View>
 
-          {/* Actions */}
+          {/* Actions: Save / Share QR Tag */}
           <TouchableOpacity
             activeOpacity={0.85}
-            onPress={handlePrint}
-            style={[styles.printButton, printed && styles.printedButton]}
+            onPress={handleSaveOrShare}
+            disabled={isProcessing}
+            style={[styles.printButton, success && styles.printedButton]}
           >
-            {printed ? (
+            {isProcessing ? (
+              <ActivityIndicator size="small" color={WIGO_COLORS.textWhite} />
+            ) : success ? (
               <>
                 <Check size={16} color={WIGO_COLORS.textWhite} strokeWidth={2.5} />
-                <Text style={styles.printButtonText}>Sent to {WIGO_METRICS.printerModel}!</Text>
+                <Text style={styles.printButtonText}>Saved Successfully!</Text>
               </>
             ) : (
               <>
-                <Printer size={16} color={WIGO_COLORS.textWhite} strokeWidth={2} />
-                <Text style={styles.printButtonText}>Print Label Tag</Text>
+                <Download size={16} color={WIGO_COLORS.textWhite} strokeWidth={2} />
+                <Text style={styles.printButtonText}>Save / Share QR Code</Text>
               </>
             )}
           </TouchableOpacity>
@@ -96,7 +169,7 @@ export function WigoQrModal({ visible, item, onClose, onPrint }: WigoQrModalProp
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.55)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 24,
@@ -110,6 +183,11 @@ const styles = StyleSheet.create({
     gap: 16,
     borderWidth: 0.5,
     borderColor: WIGO_COLORS.borderSubtle,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.1,
+    shadowRadius: 16,
+    elevation: 8,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -148,13 +226,13 @@ const styles = StyleSheet.create({
   },
   labelPreview: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    borderRadius: 14,
     borderWidth: 1.5,
     borderColor: '#0A0A0A',
     borderStyle: 'dashed',
     padding: 16,
     alignItems: 'center',
-    gap: 10,
+    gap: 8,
   },
   labelHeader: {
     flexDirection: 'row',
@@ -175,8 +253,10 @@ const styles = StyleSheet.create({
     color: WIGO_COLORS.textSubdued,
   },
   qrContainer: {
-    padding: 8,
+    padding: 10,
     backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   labelTitle: {
     fontFamily: 'Geist_500Medium',
@@ -190,6 +270,11 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '500',
     color: WIGO_COLORS.textSubdued,
+  },
+  taglineText: {
+    fontFamily: 'Onest_500Medium',
+    fontSize: 10,
+    color: '#8A8F98',
   },
   printButton: {
     flexDirection: 'row',

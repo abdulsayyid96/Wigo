@@ -14,14 +14,12 @@ interface WigoItemCardProps {
   item: EquipmentItem;
   onPress?: () => void;
   onQrPress?: () => void;
-  onMovementPress?: () => void;
 }
 
 export function WigoItemCard({
   item,
   onPress,
   onQrPress,
-  onMovementPress,
 }: WigoItemCardProps) {
   return (
     <TouchableOpacity
@@ -58,17 +56,9 @@ export function WigoItemCard({
             activeOpacity={0.7}
             onPress={onQrPress}
             style={styles.actionPillButton}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
-            <QrCode size={14} color={WIGO_COLORS.textDark} strokeWidth={2} />
-          </TouchableOpacity>
-
-          {/* Transfer / Movement Pill Button */}
-          <TouchableOpacity
-            activeOpacity={0.7}
-            onPress={onMovementPress}
-            style={styles.actionPillButton}
-          >
-            <ArrowDownUp size={14} color={WIGO_COLORS.textDark} strokeWidth={2} />
+            <QrCode size={15} color={WIGO_COLORS.textDark} strokeWidth={2} />
           </TouchableOpacity>
         </View>
       </View>

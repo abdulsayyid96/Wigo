@@ -39,6 +39,7 @@ import { WigoCategoryPickerSheet } from '@/components/wigo/WigoCategoryPickerShe
 import { WigoDatePickerSheet } from '@/components/wigo/WigoDatePickerSheet';
 import { WigoImageSourceModal } from '@/components/wigo/WigoImageSourceModal';
 import { WigoApiKeyModal } from '@/components/wigo/WigoApiKeyModal';
+import { WigoQrModal } from '@/components/wigo/WigoQrModal';
 import {
   scanReceiptWithGemini,
   getGeminiApiKey,
@@ -92,6 +93,7 @@ export default function WigoAddItemScreen() {
   const [imageSourceTarget, setImageSourceTarget] = useState<'item' | 'receipt'>('item');
   const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false);
   const [pendingReceiptBase64, setPendingReceiptBase64] = useState<string | null>(null);
+  const [savedItemForQr, setSavedItemForQr] = useState<EquipmentItem | null>(null);
 
   // Quantity handlers
   const handleDecrement = () => {
@@ -277,17 +279,7 @@ export default function WigoAddItemScreen() {
     };
 
     addWigoItem(newItem);
-
-    Alert.alert(
-      'Label Sent to Printer',
-      `Barcode label 50×30mm for "${newItem.name}" (${newItem.sku}) queued to Phomemo M110.`,
-      [
-        {
-          text: 'Done',
-          onPress: () => router.back(),
-        },
-      ]
-    );
+    setSavedItemForQr(newItem);
   };
 
   const handleSaveDraft = () => {
@@ -845,6 +837,16 @@ export default function WigoAddItemScreen() {
             setPendingReceiptBase64(null);
           }}
           onSaveKey={handleSaveApiKey}
+        />
+
+        {/* QR Code / Label Print Modal */}
+        <WigoQrModal
+          visible={!!savedItemForQr}
+          item={savedItemForQr}
+          onClose={() => {
+            setSavedItemForQr(null);
+            router.back();
+          }}
         />
       </View>
     </View>

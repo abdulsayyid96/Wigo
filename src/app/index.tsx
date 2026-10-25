@@ -223,7 +223,6 @@ export default function WigoDashboardScreen() {
                       })
                     }
                     onQrPress={() => setSelectedQrItem(item)}
-                    onMovementPress={() => setIsScanOpen(true)}
                   />
                 ))
               )}
@@ -242,9 +241,9 @@ export default function WigoDashboardScreen() {
             activeTab={activeTab}
             onTabPress={(tab) => {
               setActiveTab(tab);
-              if (tab === 'scan') router.push('/scanner?mode=barcode');
+              if (tab === 'scan') setIsScanOpen(true);
             }}
-            onScanPress={() => router.push('/scanner?mode=barcode')}
+            onScanPress={() => setIsScanOpen(true)}
           />
         </View>
       </View>
