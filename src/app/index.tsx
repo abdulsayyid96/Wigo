@@ -154,8 +154,8 @@ export default function WigoDashboardScreen() {
           <View style={styles.contentWrapper}>
             {/* 1. App Header */}
             <WigoHeader
-              onPrinterPress={handlePrinterPress}
-              onNotificationsPress={handleNotificationsPress}
+              // onPrinterPress={handlePrinterPress}
+              // onNotificationsPress={handleNotificationsPress}
             />
 
             {/* 2. Quick Action Row */}
