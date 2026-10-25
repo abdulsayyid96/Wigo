@@ -40,7 +40,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontFamily: 'Geist_500Medium',
     fontSize: 16,
-    fontWeight: '500',
+    fontWeight: '800',
     color: WIGO_COLORS.textDark,
     letterSpacing: -0.2,
     lineHeight: 20,

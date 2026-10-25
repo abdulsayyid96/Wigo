@@ -17,6 +17,9 @@ export interface EquipmentItem {
   purchaseCostTotal?: string;
   totalQuantity?: number;
   lendingRate?: string;
+  supplier?: string;
+  invoiceImageUri?: string;
+  warrantyPeriod?: string;
   earnings?: {
     lifetime: string;
     ytd: string;
@@ -54,6 +57,8 @@ export const WIGO_ITEMS: EquipmentItem[] = [
     purchaseCostTotal: 'Rp 2.450.000',
     totalQuantity: 5,
     lendingRate: 'Rp 85.000',
+    supplier: 'Mitra10 Superstore',
+    warrantyPeriod: '24 Months Official Warranty',
     earnings: {
       lifetime: 'Rp 114.750.000',
       ytd: 'Rp 38.250.000',

@@ -56,7 +56,7 @@ export function WigoSearchAndFilter({
       </View>
 
       {/* Filter Chips Row */}
-      <ScrollView
+      {/* <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.filterChipsRow}
@@ -92,7 +92,7 @@ export function WigoSearchAndFilter({
             </TouchableOpacity>
           );
         })}
-      </ScrollView>
+      </ScrollView> */}
     </View>
   );
 }

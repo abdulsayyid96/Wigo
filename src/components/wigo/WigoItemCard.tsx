@@ -143,7 +143,7 @@ const styles = StyleSheet.create({
   },
   itemTitle: {
     fontFamily: 'Geist_500Medium',
-    fontSize: 13,
+    fontSize: 16,
     fontWeight: '500',
     color: WIGO_COLORS.textDark,
     letterSpacing: -0.2,
@@ -156,14 +156,14 @@ const styles = StyleSheet.create({
   },
   skuText: {
     fontFamily: 'Onest_400Regular',
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '400',
     color: WIGO_COLORS.textSubdued,
     lineHeight: 15,
   },
   costText: {
     fontFamily: 'Onest_400Regular',
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '400',
     color: WIGO_COLORS.textSubdued,
     lineHeight: 15,
@@ -208,7 +208,7 @@ const styles = StyleSheet.create({
   },
   availText: {
     fontFamily: 'Onest_500Medium',
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '500',
     color: WIGO_COLORS.statusGreen,
     lineHeight: 13,
@@ -223,7 +223,7 @@ const styles = StyleSheet.create({
   },
   outText: {
     fontFamily: 'Onest_500Medium',
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '500',
     color: WIGO_COLORS.statusOrange,
     lineHeight: 13,
@@ -238,7 +238,7 @@ const styles = StyleSheet.create({
   },
   serviceText: {
     fontFamily: 'Onest_500Medium',
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '500',
     color: WIGO_COLORS.statusYellow,
     lineHeight: 13,

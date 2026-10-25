@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Camera, Image as ImageIcon, X } from 'lucide-react-native';
+import { capImageResolution } from '@/utils/image-manipulator';
 
 interface WigoImageSourceModalProps {
   visible: boolean;
@@ -47,15 +48,22 @@ export function WigoImageSourceModal({
       const result = await ImagePicker.launchCameraAsync({
         mediaTypes: ['images'],
         allowsEditing: false,
-        quality: 0.8,
+        quality: 0.9,
         base64: true,
       });
 
       if (!result.canceled && result.assets && result.assets.length > 0) {
         const asset = result.assets[0];
+        // Automatically resize and cap image resolution to max width: 1200
+        const processed = await capImageResolution(asset.uri, {
+          maxWidth: 1200,
+          compress: 0.85,
+          includeBase64: true,
+        });
+
         onImageSelected({
-          uri: asset.uri,
-          base64: asset.base64 ?? undefined,
+          uri: processed.uri,
+          base64: processed.base64 || asset.base64 || undefined,
         });
       }
     } catch (err: any) {
@@ -82,15 +90,22 @@ export function WigoImageSourceModal({
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images'],
         allowsEditing: false,
-        quality: 0.8,
+        quality: 0.9,
         base64: true,
       });
 
       if (!result.canceled && result.assets && result.assets.length > 0) {
         const asset = result.assets[0];
+        // Automatically resize and cap image resolution to max width: 1200
+        const processed = await capImageResolution(asset.uri, {
+          maxWidth: 1200,
+          compress: 0.85,
+          includeBase64: true,
+        });
+
         onImageSelected({
-          uri: asset.uri,
-          base64: asset.base64 ?? undefined,
+          uri: processed.uri,
+          base64: processed.base64 || asset.base64 || undefined,
         });
       }
     } catch (err: any) {
@@ -103,7 +118,7 @@ export function WigoImageSourceModal({
     <Modal
       visible={visible}
       transparent
-      animationType="fade"
+      animationType="slide"
       onRequestClose={onClose}
     >
       <TouchableWithoutFeedback onPress={onClose}>

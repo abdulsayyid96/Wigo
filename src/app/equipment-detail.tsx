@@ -28,10 +28,15 @@ import {
   Wifi,
   Battery,
   X,
+  RotateCwClock,
+  MoreVertical,
+  Trash2,
+  ZoomIn,
 } from 'lucide-react-native';
 
 import { EquipmentItem, WIGO_ITEMS } from '@/constants/wigo-theme';
-import { getWigoItemById, updateWigoItem } from '@/constants/wigo-store';
+import { getWigoItemById, updateWigoItem, deleteWigoItem } from '@/constants/wigo-store';
+import { WigoImageSourceModal } from '@/components/wigo/WigoImageSourceModal';
 
 export default function WigoEquipmentDetailScreen() {
   const insets = useSafeAreaInsets();
@@ -68,7 +73,14 @@ export default function WigoEquipmentDetailScreen() {
   const [lendingRate, setLendingRate] = useState(baseItem.lendingRate || 'Rp 85.000');
   const [availableCount, setAvailableCount] = useState(baseItem.availableCount);
   const [outCount, setOutCount] = useState(baseItem.outCount);
-  const [serviceCount, setServiceCount] = useState(baseItem.serviceCount || 1);
+  const [serviceCount, setServiceCount] = useState(baseItem.serviceCount || 0);
+  const [supplier, setSupplier] = useState(baseItem.supplier || 'Mitra10 Superstore');
+  const [warrantyPeriod, setWarrantyPeriod] = useState(
+    baseItem.warrantyPeriod || '24 Months Official Warranty'
+  );
+  const [invoiceImageUri, setInvoiceImageUri] = useState<string>(
+    baseItem.invoiceImageUri || ''
+  );
 
   // Gallery state (5 thumbnail slots)
   const [selectedPhotoIndex, setSelectedPhotoIndex] = useState(0);
@@ -78,6 +90,9 @@ export default function WigoEquipmentDetailScreen() {
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
   const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
   const [isStatsModalOpen, setIsStatsModalOpen] = useState(false);
+  const [isContextMenuOpen, setIsContextMenuOpen] = useState(false);
+  const [isInvoiceImageModalOpen, setIsInvoiceImageModalOpen] = useState(false);
+  const [isInvoiceImageSourceOpen, setIsInvoiceImageSourceOpen] = useState(false);
 
   // Stock distribution bar calculation
   const totalStock = Math.max(availableCount + outCount + serviceCount, 1);
@@ -90,6 +105,30 @@ export default function WigoEquipmentDetailScreen() {
     lifetime: 'Rp 114.750.000',
     ytd: 'Rp 38.250.000',
     monthly: 'Rp 6.375.000',
+  };
+
+  const handleDeleteEquipment = () => {
+    setIsContextMenuOpen(false);
+    Alert.alert(
+      'Delete Equipment',
+      `Are you sure you want to delete "${itemName}"? This action cannot be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => {
+            deleteWigoItem(baseItem.id);
+            Alert.alert('Equipment Deleted', `"${itemName}" was removed from inventory.`, [
+              {
+                text: 'OK',
+                onPress: () => router.back(),
+              },
+            ]);
+          },
+        },
+      ]
+    );
   };
 
   const handleSave = () => {
@@ -110,6 +149,9 @@ export default function WigoEquipmentDetailScreen() {
       availableCount,
       outCount,
       serviceCount,
+      supplier,
+      warrantyPeriod,
+      invoiceImageUri: invoiceImageUri || undefined,
     };
 
     updateWigoItem(updated);
@@ -179,12 +221,12 @@ export default function WigoEquipmentDetailScreen() {
 
           <TouchableOpacity
             activeOpacity={0.7}
-            onPress={() => setIsHistoryModalOpen(true)}
+            onPress={() => setIsContextMenuOpen(true)}
             style={styles.navCircularButton}
-            accessibilityLabel="Rental History"
+            accessibilityLabel="More Options"
             accessibilityRole="button"
           >
-            <History size={18} color="#0A0A0A" strokeWidth={2.2} />
+            <MoreVertical size={18} color="#0A0A0A" strokeWidth={2.2} />
           </TouchableOpacity>
         </View>
 
@@ -207,7 +249,7 @@ export default function WigoEquipmentDetailScreen() {
               </View>
 
               {/* Thumbnails Row */}
-              <View style={styles.thumbnailsRow}>
+              {/* <View style={styles.thumbnailsRow}>
                 {[0, 1, 2, 3, 4].map((index) => {
                   const isSelected = selectedPhotoIndex === index;
                   return (
@@ -228,7 +270,7 @@ export default function WigoEquipmentDetailScreen() {
                     </TouchableOpacity>
                   );
                 })}
-              </View>
+              </View> */}
             </View>
 
             {/* Hero Visual Row */}
@@ -596,6 +638,55 @@ export default function WigoEquipmentDetailScreen() {
               </View>
 
               <View style={styles.formGroup}>
+                <Text style={styles.inputLabel}>Supplier / Store</Text>
+                <TextInput
+                  value={supplier}
+                  onChangeText={setSupplier}
+                  style={styles.inputField}
+                  placeholder="e.g. Mitra10 Superstore"
+                  placeholderTextColor="rgba(10, 10, 10, 0.3)"
+                />
+              </View>
+
+              <View style={styles.formGroup}>
+                <Text style={styles.inputLabel}>Warranty Period</Text>
+                <TextInput
+                  value={warrantyPeriod}
+                  onChangeText={setWarrantyPeriod}
+                  style={styles.inputField}
+                  placeholder="e.g. 24 Months Official Warranty"
+                  placeholderTextColor="rgba(10, 10, 10, 0.3)"
+                />
+              </View>
+
+              <View style={styles.formGroup}>
+                <Text style={styles.inputLabel}>Invoice / Receipt Picture</Text>
+                <View style={styles.editInvoiceRow}>
+                  {invoiceImageUri ? (
+                    <Image source={{ uri: invoiceImageUri }} style={styles.editInvoiceThumb} />
+                  ) : null}
+                  <TouchableOpacity
+                    activeOpacity={0.7}
+                    onPress={() => setIsInvoiceImageSourceOpen(true)}
+                    style={styles.editInvoiceBtn}
+                  >
+                    <Text style={styles.editInvoiceBtnText}>
+                      {invoiceImageUri ? 'Change Invoice Photo' : 'Attach Invoice Photo'}
+                    </Text>
+                  </TouchableOpacity>
+                  {invoiceImageUri ? (
+                    <TouchableOpacity
+                      activeOpacity={0.7}
+                      onPress={() => setInvoiceImageUri('')}
+                      style={[styles.editInvoiceBtn, { backgroundColor: '#FEE2E2', borderColor: '#FCA5A5' }]}
+                    >
+                      <Text style={[styles.editInvoiceBtnText, { color: '#E02424' }]}>Remove</Text>
+                    </TouchableOpacity>
+                  ) : null}
+                </View>
+              </View>
+
+              <View style={styles.formGroup}>
                 <Text style={styles.inputLabel}>Purchase Date</Text>
                 <TextInput
                   value={purchaseDate}
@@ -707,23 +798,46 @@ export default function WigoEquipmentDetailScreen() {
                 <X size={18} color="#0A0A0A" />
               </TouchableOpacity>
             </View>
+            
+            {/* Invoice image preview container */}
+            {invoiceImageUri ? (
+              <TouchableOpacity
+                activeOpacity={0.9}
+                onPress={() => setIsInvoiceImageModalOpen(true)}
+                style={styles.invoiceImageContainer}
+              >
+                <Image
+                  source={{ uri: invoiceImageUri }}
+                  style={styles.invoiceImagePreview}
+                  resizeMode="cover"
+                />
+                <View style={styles.tapToZoomBadge}>
+                  <ZoomIn size={12} color="#FFFFFF" strokeWidth={2.2} />
+                  <Text style={styles.tapToZoomText}>Tap to zoom receipt</Text>
+                </View>
+              </TouchableOpacity>
+            ) : (
+              <View style={styles.noInvoiceImagePlaceholder}>
+                <ImageIcon size={26} color="rgba(10, 10, 10, 0.25)" strokeWidth={1.8} />
+                <Text style={styles.noInvoiceText}>No invoice picture attached</Text>
+                <Text style={styles.noInvoiceSubtext}>
+                  Add receipt image in Edit Details to store paper bills
+                </Text>
+              </View>
+            )}
 
             <View style={styles.invoiceCard}>
               <View style={styles.specRow}>
                 <Text style={styles.rowLabel}>Invoice No.</Text>
-                <Text style={styles.rowValueOnest}>{purchaseInvoice}</Text>
+                <Text style={styles.rowValueOnest}>{purchaseInvoice || '-'}</Text>
               </View>
               <View style={styles.specRow}>
-                <Text style={styles.rowLabel}>Vendor / Store</Text>
-                <Text style={styles.rowValueGeist}>Mitra10 Superstore</Text>
-              </View>
-              <View style={styles.specRow}>
-                <Text style={styles.rowLabel}>Tax Invoice</Text>
-                <Text style={styles.rowValueGeist}>F-PAJAK/1026/8892</Text>
+                <Text style={styles.rowLabel}>Supplier / Store</Text>
+                <Text style={styles.rowValueGeist}>{supplier || 'Mitra10 Superstore'}</Text>
               </View>
               <View style={styles.specRow}>
                 <Text style={styles.rowLabel}>Warranty Period</Text>
-                <Text style={styles.rowValueGreen}>24 Months Official Warranty</Text>
+                <Text style={styles.rowValueGreen}>{`${warrantyPeriod} Months` || '24 Months Official Warranty'}</Text>
               </View>
             </View>
 
@@ -789,6 +903,92 @@ export default function WigoEquipmentDetailScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* Three-dot Context Menu Dropdown */}
+      <Modal
+        visible={isContextMenuOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setIsContextMenuOpen(false)}
+      >
+        <TouchableOpacity
+          style={styles.contextMenuOverlay}
+          activeOpacity={1}
+          onPress={() => setIsContextMenuOpen(false)}
+        >
+          <View
+            style={[
+              styles.contextMenuDropdown,
+              {
+                top: Platform.OS === 'web' ? 56 : insets.top + 20,
+                right: 16,
+              },
+            ]}
+          >
+            <TouchableOpacity
+              style={styles.contextMenuItem}
+              activeOpacity={0.7}
+              onPress={() => {
+                setIsContextMenuOpen(false);
+                setIsHistoryModalOpen(true);
+              }}
+            >
+              <History size={16} color="#0A0A0A" strokeWidth={2} />
+              <Text style={styles.contextMenuText}>Rental History</Text>
+            </TouchableOpacity>
+
+            <View style={styles.contextMenuDivider} />
+
+            <TouchableOpacity
+              style={styles.contextMenuItem}
+              activeOpacity={0.7}
+              onPress={handleDeleteEquipment}
+            >
+              <Trash2 size={16} color="#E02424" strokeWidth={2} />
+              <Text style={[styles.contextMenuText, { color: '#E02424', fontWeight: '600' }]}>
+                Delete Equipment
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* Fullscreen Invoice Lightbox Modal */}
+      <Modal
+        visible={isInvoiceImageModalOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setIsInvoiceImageModalOpen(false)}
+      >
+        <View style={styles.fullscreenImageOverlay}>
+          <TouchableOpacity
+            style={styles.fullscreenCloseBtn}
+            onPress={() => setIsInvoiceImageModalOpen(false)}
+            activeOpacity={0.8}
+            accessibilityLabel="Close image preview"
+          >
+            <X size={20} color="#FFFFFF" strokeWidth={2.5} />
+          </TouchableOpacity>
+          {invoiceImageUri ? (
+            <Image
+              source={{ uri: invoiceImageUri }}
+              style={styles.fullscreenInvoiceImage}
+              resizeMode="contain"
+            />
+          ) : null}
+        </View>
+      </Modal>
+
+      {/* Image Picker / Camera for Invoice Picture */}
+      <WigoImageSourceModal
+        visible={isInvoiceImageSourceOpen}
+        onClose={() => setIsInvoiceImageSourceOpen(false)}
+        title="Upload Purchase Invoice"
+        subtitle="Photograph paper receipt or choose image from library"
+        onImageSelected={(res) => {
+          setInvoiceImageUri(res.uri);
+        }}
+      />
     </View>
   );
 }
@@ -875,7 +1075,7 @@ const styles = StyleSheet.create({
   },
   screenSubtitle: {
     fontFamily: 'Onest_400Regular',
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '400',
     color: '#7D8187',
     lineHeight: 13,
@@ -903,12 +1103,12 @@ const styles = StyleSheet.create({
   },
   mainPhotoStage: {
     width: '100%',
-    height: 170,
+    height: 360,
     backgroundColor: '#F7F7F7',
     borderRadius: 8,
     borderWidth: 0.5,
     borderColor: 'rgba(10, 10, 10, 0.08)',
-    padding: 12,
+    padding: 0,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
@@ -916,7 +1116,7 @@ const styles = StyleSheet.create({
   mainImage: {
     width: '100%',
     height: '100%',
-    resizeMode: 'contain',
+    resizeMode: 'cover',
   },
   thumbnailsRow: {
     flexDirection: 'row',
@@ -951,7 +1151,7 @@ const styles = StyleSheet.create({
   },
   skuSubtitle: {
     fontFamily: 'Onest_400Regular',
-    fontSize: 11,
+    fontSize: 14,
     fontWeight: '400',
     color: '#7D8187',
     lineHeight: 13,
@@ -976,7 +1176,7 @@ const styles = StyleSheet.create({
   specsHeaderTitle: {
     fontFamily: 'Onest_400Regular',
     fontSize: 16,
-    fontWeight: '400',
+    fontWeight: '800',
     color: '#0A0A0A',
   },
   actionBadge: {
@@ -990,7 +1190,7 @@ const styles = StyleSheet.create({
   },
   actionBadgeText: {
     fontFamily: 'Onest_500Medium',
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '500',
     color: '#FF5E00',
   },
@@ -1053,7 +1253,7 @@ const styles = StyleSheet.create({
   },
   pillText: {
     fontFamily: 'Onest_500Medium',
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '500',
     color: '#0A0A0A',
     lineHeight: 13,
@@ -1069,7 +1269,7 @@ const styles = StyleSheet.create({
   },
   rowLabel: {
     fontFamily: 'Geist_400Regular',
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '400',
     color: 'rgba(10, 10, 10, 0.6)',
   },
@@ -1281,5 +1481,147 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 12,
     gap: 8,
+  },
+  contextMenuOverlay: {
+    flex: 1,
+    // backgroundColor: 'rgba(0, 0, 0, 0.2)',
+  },
+  contextMenuDropdown: {
+    position: 'absolute',
+    width: 190,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    paddingVertical: 6,
+    paddingHorizontal: 4,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.16,
+    shadowRadius: 14,
+    elevation: 8,
+    borderWidth: 0.5,
+    borderColor: 'rgba(10, 10, 10, 0.08)',
+  },
+  contextMenuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+  },
+  contextMenuText: {
+    fontFamily: 'Geist_500Medium',
+    fontSize: 14,
+    color: '#0A0A0A',
+  },
+  contextMenuDivider: {
+    height: 0.5,
+    backgroundColor: 'rgba(10, 10, 10, 0.08)',
+    marginVertical: 4,
+  },
+  invoiceImageContainer: {
+    width: '100%',
+    height: 180,
+    borderRadius: 12,
+    overflow: 'hidden',
+    backgroundColor: '#EAEAEA',
+    position: 'relative',
+    borderWidth: 0.5,
+    borderColor: 'rgba(10, 10, 10, 0.1)',
+    marginBottom: 8,
+  },
+  invoiceImagePreview: {
+    width: '100%',
+    height: '100%',
+  },
+  tapToZoomBadge: {
+    position: 'absolute',
+    bottom: 8,
+    right: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: 'rgba(10, 10, 10, 0.75)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  tapToZoomText: {
+    color: '#FFFFFF',
+    fontFamily: 'Geist_500Medium',
+    fontSize: 11,
+  },
+  noInvoiceImagePlaceholder: {
+    width: '100%',
+    height: 110,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: 'rgba(10, 10, 10, 0.15)',
+    borderStyle: 'dashed',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 14,
+    backgroundColor: '#FAFAFA',
+    gap: 4,
+    marginBottom: 8,
+  },
+  noInvoiceText: {
+    fontFamily: 'Geist_600SemiBold',
+    fontSize: 13,
+    color: '#0A0A0A',
+  },
+  noInvoiceSubtext: {
+    fontFamily: 'Geist_400Regular',
+    fontSize: 11,
+    color: '#7D8187',
+    textAlign: 'center',
+  },
+  fullscreenImageOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.95)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 16,
+  },
+  fullscreenCloseBtn: {
+    position: 'absolute',
+    top: 50,
+    right: 20,
+    zIndex: 10,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  fullscreenInvoiceImage: {
+    width: '100%',
+    height: '80%',
+  },
+  editInvoiceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginTop: 4,
+  },
+  editInvoiceThumb: {
+    width: 50,
+    height: 50,
+    borderRadius: 8,
+    backgroundColor: '#EAEAEA',
+  },
+  editInvoiceBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: '#F2F2F2',
+    borderWidth: 0.5,
+    borderColor: 'rgba(10, 10, 10, 0.15)',
+  },
+  editInvoiceBtnText: {
+    fontFamily: 'Geist_500Medium',
+    fontSize: 12,
+    color: '#0A0A0A',
   },
 });

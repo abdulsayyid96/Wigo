@@ -70,6 +70,7 @@ export default function WigoAddItemScreen() {
   const [unitCost, setUnitCost] = useState('');
   const [quantity, setQuantity] = useState(1);
   const [lendingRate, setLendingRate] = useState('');
+  const [warrantyPeriod, setWarrantyPeriod] = useState('');
 
   // AI autofill state indicator
   const [isAiParsed, setIsAiParsed] = useState(false);
@@ -154,6 +155,7 @@ export default function WigoAddItemScreen() {
     setUnitCost('Rp 490.000');
     setQuantity(5);
     setLendingRate('Rp 85.000');
+    setWarrantyPeriod('24 Months Official Warranty');
     setIsAiParsed(true);
     setIsUnitCostManual(false);
     Alert.alert('AI Receipt & Tag OCR', 'Autofilled specifications and billing data from demo receipt.');
@@ -264,6 +266,9 @@ export default function WigoAddItemScreen() {
       category: 'available',
       categoryName: category,
       imageUri: itemPhotoUri || undefined,
+      supplier: supplier.trim() || undefined,
+      invoiceImageUri: receiptPhotoUri || undefined,
+      warrantyPeriod: warrantyPeriod.trim() || undefined,
       purchaseDate: purchaseDate,
       purchaseInvoice: supplier.trim() ? `INV/${supplier.trim().slice(0, 4).toUpperCase()}/${Date.now().toString().slice(-4)}` : undefined,
       purchaseCostTotal: purchaseCost.trim() || undefined,
@@ -303,6 +308,9 @@ export default function WigoAddItemScreen() {
       category: 'available',
       categoryName: category,
       imageUri: itemPhotoUri || undefined,
+      supplier: supplier.trim() || undefined,
+      invoiceImageUri: receiptPhotoUri || undefined,
+      warrantyPeriod: warrantyPeriod.trim() || undefined,
       purchaseDate: purchaseDate,
       purchaseInvoice: supplier.trim() ? `INV/${supplier.trim().slice(0, 4).toUpperCase()}/${Date.now().toString().slice(-4)}` : undefined,
       purchaseCostTotal: purchaseCost.trim() || undefined,
@@ -357,7 +365,7 @@ export default function WigoAddItemScreen() {
 
           <View style={styles.titleBox}>
             <Text style={styles.screenTitle}>Add New Equipment</Text>
-            <Text style={styles.screenSubtitle}>Item Intake & Labeling</Text>
+            <Text style={styles.screenSubtitle}>Item Input & Labeling</Text>
           </View>
 
           <TouchableOpacity
@@ -427,7 +435,7 @@ export default function WigoAddItemScreen() {
                   <Text style={styles.photoLabel}>Bill / Invoice</Text>
                   {isScanningReceipt && (
                     <View style={styles.scanningBadge}>
-                      <ActivityIndicator size="small" color="#ff5e00" />
+                      {/* <ActivityIndicator size="small" color="#ff5e00" /> */}
                       <Text style={styles.scanningText}>Scanning...</Text>
                     </View>
                   )}
@@ -651,6 +659,30 @@ export default function WigoAddItemScreen() {
                   </View>
                 </View>
               </View>
+
+              {/* Warranty Period Row */}
+              <View style={styles.fieldRow}>
+                <View style={styles.flexField}>
+                  <Text style={styles.fieldLabel}>Warranty Period</Text>
+                  <View style={styles.inputBoxWithAction}>
+                    <TextInput
+                      value={warrantyPeriod}
+                      onChangeText={setWarrantyPeriod}
+                      placeholder="e.g. 24 Months Official Warranty"
+                      placeholderTextColor={WIGO_COLORS.textPlaceholder}
+                      style={[styles.inputTextGeist, { flex: 1 }]}
+                    />
+                    {warrantyPeriod.length > 0 && (
+                      <TouchableOpacity
+                        onPress={() => setWarrantyPeriod('')}
+                        style={styles.clearBtn}
+                      >
+                        <X size={13} color="#8A8F98" strokeWidth={2.2} />
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                </View>
+              </View>
             </View>
 
             {/* Section 3 - Stock & Rental Rate */}
@@ -822,23 +854,27 @@ export default function WigoAddItemScreen() {
 const styles = StyleSheet.create({
   outerCanvas: {
     flex: 1,
-    backgroundColor: '#050505',
+    backgroundColor: Platform.OS === 'web' ? '#EAEAEF' : WIGO_COLORS.background,
     alignItems: 'center',
     justifyContent: 'center',
   },
   phoneFrame: {
     width: '100%',
-    maxWidth: 393,
-    height: '100%',
-    backgroundColor: '#FFFFFF',
+    maxWidth: Platform.OS === 'web' ? 393 : undefined,
+    height: Platform.OS === 'web' ? '96vh' : '100%',
+    maxHeight: Platform.OS === 'web' ? 980 : undefined,
+    backgroundColor: WIGO_COLORS.cardBackground,
+    borderWidth: Platform.OS === 'web' ? 0.5 : 0,
+    borderColor: 'rgba(10, 10, 10, 0.08)',
+    borderRadius: Platform.OS === 'web' ? 44 : 0,
     overflow: 'hidden',
     position: 'relative',
-    display: 'flex',
-    flexDirection: 'column',
     ...Platform.select({
       web: {
-        boxShadow: '0 20px 40px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.05)',
+        boxShadow:
+          '0 20px 40px -10px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(0, 0, 0, 0.04)',
       },
+      default: {},
     }),
   },
 
@@ -902,7 +938,7 @@ const styles = StyleSheet.create({
   },
   screenSubtitle: {
     fontFamily: 'Onest_400Regular',
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '400',
     color: '#7D8187',
     lineHeight: 13,
@@ -940,7 +976,7 @@ const styles = StyleSheet.create({
   },
   photoLabel: {
     fontFamily: 'Onest_400Regular',
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '400',
     color: '#0A0A0A',
   },
@@ -955,7 +991,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   photoSlot: {
-    height: 96,
+    height: 120,
     borderRadius: 16,
     backgroundColor: '#F5F5F7',
     borderWidth: 1,
@@ -1031,18 +1067,18 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontFamily: 'Onest_400Regular',
     fontSize: 16,
-    fontWeight: '400',
+    fontWeight: '800',
     color: '#0A0A0A',
   },
   sectionTitleSmall: {
     fontFamily: 'Onest_400Regular',
-    fontSize: 14,
-    fontWeight: '400',
+    fontSize: 16,
+    fontWeight: '800',
     color: '#0A0A0A',
   },
   sectionSubtitle: {
     fontFamily: 'Onest_400Regular',
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '400',
     color: '#7D8187',
   },
@@ -1050,25 +1086,25 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    borderRadius: 9999,
-    paddingVertical: 3,
-    paddingHorizontal: 7,
-    backgroundColor: 'rgba(255, 94, 0, 0.08)',
+    // borderRadius: 9999,
+    // paddingVertical: 3,
+    // paddingHorizontal: 7,
+    // backgroundColor: 'rgba(255, 94, 0, 0.08)',
   },
   aiBadgeText: {
     fontFamily: 'Onest_500Medium',
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '500',
     color: '#ff5e00',
   },
   autoCalcTag: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '600',
     color: '#ff5e00',
-    backgroundColor: 'rgba(255, 94, 0, 0.1)',
-    paddingHorizontal: 5,
-    paddingVertical: 1,
-    borderRadius: 4,
+    // backgroundColor: 'rgba(255, 94, 0, 0.1)',
+    // paddingHorizontal: 5,
+    // paddingVertical: 1,
+    // borderRadius: 4,
   },
 
   /* Form Fields */
@@ -1079,7 +1115,7 @@ const styles = StyleSheet.create({
   },
   fieldLabel: {
     fontFamily: 'Geist_400Regular',
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '400',
     color: 'rgba(10, 10, 10, 0.6)',
     lineHeight: 14,
@@ -1125,7 +1161,7 @@ const styles = StyleSheet.create({
   inputTextGeist: {
     fontFamily: 'Geist_400Regular',
     fontSize: 13,
-    fontWeight: '400',
+    fontWeight: '600',
     color: '#0A0A0A',
     padding: 0,
     margin: 0,
@@ -1156,8 +1192,8 @@ const styles = StyleSheet.create({
   stepperBtn: {
     width: 28,
     height: 28,
-    borderRadius: 6,
-    backgroundColor: '#F5F5F7',
+    // borderRadius: 6,
+    // backgroundColor: '#F5F5F7',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1197,7 +1233,7 @@ const styles = StyleSheet.create({
   labelTextCol: {
     flex: 1,
     flexDirection: 'column',
-    gap: 2,
+    gap: 1,
   },
   noticeTitle: {
     fontFamily: 'Geist_500Medium',
@@ -1207,7 +1243,7 @@ const styles = StyleSheet.create({
   },
   noticeSub: {
     fontFamily: 'Geist_400Regular',
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '400',
     color: '#7D8187',
   },

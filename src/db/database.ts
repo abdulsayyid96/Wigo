@@ -51,6 +51,9 @@ class NativeSQLiteAdapter implements DatabaseAdapter {
         unit_cost TEXT,
         total_quantity INTEGER,
         lending_rate TEXT,
+        supplier TEXT,
+        invoice_image_uri TEXT,
+        warranty_period TEXT,
         earnings_json TEXT,
         created_at INTEGER NOT NULL
       );
@@ -61,6 +64,17 @@ class NativeSQLiteAdapter implements DatabaseAdapter {
         created_at INTEGER NOT NULL
       );
     `);
+
+    // Migration: ensure newly added columns exist in older SQLite databases
+    try {
+      this.db.execSync('ALTER TABLE equipment ADD COLUMN supplier TEXT;');
+    } catch {}
+    try {
+      this.db.execSync('ALTER TABLE equipment ADD COLUMN invoice_image_uri TEXT;');
+    } catch {}
+    try {
+      this.db.execSync('ALTER TABLE equipment ADD COLUMN warranty_period TEXT;');
+    } catch {}
   }
 
   private mapRowToItem(row: any): EquipmentItem {
@@ -90,6 +104,9 @@ class NativeSQLiteAdapter implements DatabaseAdapter {
       purchaseCostTotal: row.purchase_cost_total || undefined,
       totalQuantity: row.total_quantity ? Number(row.total_quantity) : undefined,
       lendingRate: row.lending_rate || undefined,
+      supplier: row.supplier || undefined,
+      invoiceImageUri: row.invoice_image_uri || undefined,
+      warrantyPeriod: row.warranty_period || undefined,
       earnings,
     };
   }
@@ -116,8 +133,9 @@ class NativeSQLiteAdapter implements DatabaseAdapter {
         id, name, sku, cost, available_count, out_count, service_count,
         category, category_name, image_uri, serial_number, included_in_kit,
         physical_condition, purchase_invoice, purchase_date, purchase_cost_total,
-        total_quantity, lending_rate, earnings_json, created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
+        total_quantity, lending_rate, supplier, invoice_image_uri, warranty_period,
+        earnings_json, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
       [
         item.id,
         item.name,
@@ -137,6 +155,9 @@ class NativeSQLiteAdapter implements DatabaseAdapter {
         item.purchaseCostTotal || null,
         item.totalQuantity || item.availableCount,
         item.lendingRate || null,
+        item.supplier || null,
+        item.invoiceImageUri || null,
+        item.warrantyPeriod || null,
         earningsJson,
         now,
       ]

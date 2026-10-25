@@ -132,8 +132,8 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   metricLabel: {
-    fontFamily: 'Onest_500Medium',
-    fontSize: 11,
+    fontFamily: 'Geist_400Regular',
+    fontSize: 12,
     fontWeight: '500',
     color: WIGO_COLORS.textWhite,
     letterSpacing: 0.5,
@@ -155,7 +155,7 @@ const styles = StyleSheet.create({
   },
   currencyAmount: {
     fontFamily: 'Onest_600SemiBold',
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: '600',
     color: WIGO_COLORS.textWhite,
     letterSpacing: -0.5,
@@ -197,7 +197,7 @@ const styles = StyleSheet.create({
   },
   primaryValue: {
     fontFamily: 'Onest_600SemiBold',
-    fontSize: 18,
+    fontSize: 24,
     fontWeight: '600',
     color: WIGO_COLORS.textWhite,
     letterSpacing: -0.2,
@@ -205,7 +205,7 @@ const styles = StyleSheet.create({
   },
   secondaryValue: {
     fontFamily: 'Onest_400Regular',
-    fontSize: 11,
+    fontSize: 16,
     fontWeight: '400',
     color: WIGO_COLORS.textWhiteSubdued,
     lineHeight: 13,
