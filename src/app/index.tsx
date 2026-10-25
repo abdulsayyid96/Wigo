@@ -4,11 +4,12 @@ import {
   Text,
   View,
   ScrollView,
-  SafeAreaView,
   Platform,
   Alert,
+  TouchableOpacity,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { PackageOpen, Plus } from 'lucide-react-native';
 
 import { router } from 'expo-router';
 import {
@@ -163,8 +164,8 @@ export default function WigoDashboardScreen() {
               onAddItemPress={() => router.push('/add-item')}
             />
 
-            {/* 3. Metric Asset Value Card */}
-            <WigoMetricCard />
+            {/* 3. Metric Asset Value Card (calculated dynamically from SQLite items) */}
+            <WigoMetricCard items={items} />
 
             {/* 4. Search and Filter Chips */}
             <WigoSearchAndFilter
@@ -182,17 +183,50 @@ export default function WigoDashboardScreen() {
               onSortPress={toggleSortOrder}
             />
 
-            {/* 6. Item List */}
+            {/* 6. Item List / Clean Empty State */}
             <View style={styles.itemList}>
-              {filteredItems.map((item) => (
-                <WigoItemCard
-                  key={item.id}
-                  item={item}
-                  onPress={() => setSelectedQrItem(item)}
-                  onQrPress={() => setSelectedQrItem(item)}
-                  onMovementPress={() => setIsScanOpen(true)}
-                />
-              ))}
+              {filteredItems.length === 0 ? (
+                <View style={styles.emptyCard}>
+                  <View style={styles.emptyIconCircle}>
+                    <PackageOpen size={28} color="#ff5e00" strokeWidth={1.8} />
+                  </View>
+                  <Text style={styles.emptyTitle}>
+                    {searchQuery.trim()
+                      ? 'No Matching Equipment'
+                      : 'No Equipment Registered'}
+                  </Text>
+                  <Text style={styles.emptySub}>
+                    {searchQuery.trim()
+                      ? `No items found for "${searchQuery}". Try a different keyword or reset filters.`
+                      : 'Your local database is currently empty. Tap below to intake and print labels for your first equipment.'}
+                  </Text>
+                  {!searchQuery.trim() && (
+                    <TouchableOpacity
+                      activeOpacity={0.85}
+                      onPress={() => router.push('/add-item')}
+                      style={styles.emptyAddBtn}
+                    >
+                      <Plus size={16} color="#FFFFFF" strokeWidth={2.4} />
+                      <Text style={styles.emptyAddBtnText}>Add New Equipment</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              ) : (
+                filteredItems.map((item) => (
+                  <WigoItemCard
+                    key={item.id}
+                    item={item}
+                    onPress={() =>
+                      router.push({
+                        pathname: '/equipment-detail',
+                        params: { id: item.id },
+                      })
+                    }
+                    onQrPress={() => setSelectedQrItem(item)}
+                    onMovementPress={() => setIsScanOpen(true)}
+                  />
+                ))
+              )}
             </View>
           </View>
         </ScrollView>
@@ -288,5 +322,60 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     backgroundColor: 'transparent',
+  },
+
+  /* Empty State Card */
+  emptyCard: {
+    width: '100%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    borderWidth: 0.5,
+    borderColor: 'rgba(10, 10, 10, 0.08)',
+    paddingVertical: 36,
+    paddingHorizontal: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  emptyIconCircle: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: 'rgba(255, 94, 0, 0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 6,
+  },
+  emptyTitle: {
+    fontFamily: 'Geist_600SemiBold',
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#0A0A0A',
+    textAlign: 'center',
+  },
+  emptySub: {
+    fontFamily: 'Onest_400Regular',
+    fontSize: 13,
+    fontWeight: '400',
+    color: '#7D8187',
+    textAlign: 'center',
+    lineHeight: 18,
+    maxWidth: 280,
+  },
+  emptyAddBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#ff5e00',
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    borderRadius: 9999,
+    marginTop: 10,
+  },
+  emptyAddBtnText: {
+    fontFamily: 'Geist_600SemiBold',
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#FFFFFF',
   },
 });

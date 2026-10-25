@@ -1,9 +1,53 @@
 import React from 'react';
 import { StyleSheet, Text, View, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { WIGO_COLORS, WIGO_METRICS } from '@/constants/wigo-theme';
+import { EquipmentItem, WIGO_COLORS, WIGO_METRICS } from '@/constants/wigo-theme';
+import { parseIdrNumber } from '@/utils/currency';
 
-export function WigoMetricCard() {
+interface WigoMetricCardProps {
+  items?: EquipmentItem[];
+}
+
+export function WigoMetricCard({ items }: WigoMetricCardProps) {
+  // Calculate dynamically if items are provided, otherwise fallback to default
+  const metrics = React.useMemo(() => {
+    if (!items) return WIGO_METRICS;
+    if (items.length === 0) {
+      return {
+        totalValueRp: '0',
+        available: 0,
+        totalCapacity: 0,
+        vendor: 0,
+        service: 0,
+      };
+    }
+
+    let totalVal = 0;
+    let available = 0;
+    let out = 0;
+    let service = 0;
+    const vendors = new Set<string>();
+
+    items.forEach((item) => {
+      const val = parseIdrNumber(item.purchaseCostTotal || item.cost);
+      totalVal += val;
+      available += item.availableCount || 0;
+      out += item.outCount || 0;
+      service += item.serviceCount || 0;
+      if (item.categoryName) vendors.add(item.categoryName);
+    });
+
+    const formattedVal = totalVal.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+
+    return {
+      totalValueRp: formattedVal || '0',
+      available,
+      totalCapacity: available + out + service,
+      vendor: vendors.size,
+      service,
+    };
+  }, [items]);
+
   return (
     <LinearGradient
       colors={['#1c1c1e', '#0A0A0A']}
@@ -16,7 +60,7 @@ export function WigoMetricCard() {
         <Text style={styles.metricLabel}>Total Value Asset</Text>
         <View style={styles.valueRow}>
           <Text style={styles.currencyPrefix}>Rp</Text>
-          <Text style={styles.currencyAmount}>{WIGO_METRICS.totalValueRp}</Text>
+          <Text style={styles.currencyAmount}>{metrics.totalValueRp}</Text>
         </View>
       </View>
 
@@ -29,19 +73,19 @@ export function WigoMetricCard() {
             <View style={[styles.statusDot, { backgroundColor: WIGO_COLORS.statusGreen }]} />
           </View>
           <View style={styles.columnValueRow}>
-            <Text style={styles.primaryValue}>{WIGO_METRICS.available}</Text>
-            <Text style={styles.secondaryValue}>/ {WIGO_METRICS.totalCapacity}</Text>
+            <Text style={styles.primaryValue}>{metrics.available}</Text>
+            <Text style={styles.secondaryValue}>/ {metrics.totalCapacity}</Text>
           </View>
         </View>
 
         {/* Vendor Metric */}
         <View style={styles.metricColumn}>
           <View style={styles.columnHeader}>
-            <Text style={styles.columnLabel}>Vendor</Text>
+            <Text style={styles.columnLabel}>Categories</Text>
             <View style={[styles.statusDot, { backgroundColor: WIGO_COLORS.statusOrange }]} />
           </View>
           <View style={styles.columnValueRow}>
-            <Text style={styles.primaryValue}>{WIGO_METRICS.vendor}</Text>
+            <Text style={styles.primaryValue}>{metrics.vendor}</Text>
           </View>
         </View>
 
@@ -52,7 +96,7 @@ export function WigoMetricCard() {
             <View style={[styles.statusDot, { backgroundColor: WIGO_COLORS.statusYellow }]} />
           </View>
           <View style={styles.columnValueRow}>
-            <Text style={styles.primaryValue}>{WIGO_METRICS.service}</Text>
+            <Text style={styles.primaryValue}>{metrics.service}</Text>
           </View>
         </View>
       </View>

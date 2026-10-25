@@ -10,6 +10,7 @@ import {
   Alert,
   Modal,
 } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { router, useLocalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -32,7 +33,7 @@ import {
 } from 'lucide-react-native';
 import { WigoStatusBar } from '@/components/wigo/WigoStatusBar';
 import { getWigoItems, updateWigoItemStock } from '@/constants/wigo-store';
-import { EquipmentItem, WIGO_COLORS } from '@/constants/wigo-theme';
+import { EquipmentItem } from '@/constants/wigo-theme';
 
 export type ScannerMode = 'barcode' | 'receipt' | 'item_photo';
 
@@ -49,7 +50,9 @@ export default function WigoUnifiedScannerScreen() {
       : 'barcode';
 
   const [activeMode, setActiveMode] = useState<ScannerMode>(initialMode);
-  const [subMode, setSubMode] = useState<string>('default');
+  const [subMode, setSubMode] = useState<string>(
+    initialMode === 'barcode' ? 'barcode' : initialMode === 'receipt' ? 'paper' : 'front'
+  );
   const [flashActive, setFlashActive] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
   const [scanSuccess, setScanSuccess] = useState(false);
@@ -60,13 +63,6 @@ export default function WigoUnifiedScannerScreen() {
 
   // Animated laser scan sweep
   const scanLineAnim = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    // Set initial submode based on active mode
-    if (activeMode === 'barcode') setSubMode('barcode');
-    else if (activeMode === 'receipt') setSubMode('paper');
-    else if (activeMode === 'item_photo') setSubMode('front');
-  }, [activeMode]);
 
   useEffect(() => {
     const loop = Animated.loop(
@@ -90,11 +86,11 @@ export default function WigoUnifiedScannerScreen() {
   }, [scanLineAnim, activeMode]);
 
   // Handle Shutter Trigger based on current mode
-  const handleShutterPress = () => {
+  const handleShutterPress = async () => {
     if (isScanning || scanSuccess) return;
-    setIsScanning(true);
 
     if (activeMode === 'barcode') {
+      setIsScanning(true);
       // Barcode / QR Tag scan simulation
       setTimeout(() => {
         setIsScanning(false);
@@ -106,34 +102,48 @@ export default function WigoUnifiedScannerScreen() {
             id: '1',
             name: 'DeWalt 20V Max Hammer Drill',
             sku: 'DW-887X',
-            cost: '$280.00',
+            cost: 'Rp 280.000',
             availableCount: 8,
             outCount: 2,
             category: 'available',
           };
         setScannedItem(matched);
       }, 1000);
-    } else if (activeMode === 'receipt') {
-      // Gemini Vision Receipt OCR scan simulation
-      setTimeout(() => {
-        setIsScanning(false);
-        setScanSuccess(true);
-        setTimeout(() => {
-          router.push('/add-item');
-        }, 1200);
-      }, 1500);
     } else {
-      // Item Photo capture simulation
-      setTimeout(() => {
-        setIsScanning(false);
-        setScanSuccess(true);
-        setTimeout(() => {
-          router.push({
-            pathname: '/add-item',
-            params: { photoCaptured: 'true' },
-          });
-        }, 800);
-      }, 600);
+      // Launch native camera
+      try {
+        if (Platform.OS !== 'web') {
+          const { status } = await ImagePicker.requestCameraPermissionsAsync();
+          if (status !== 'granted') {
+            Alert.alert('Camera Permission Required', 'Please enable camera access in device settings.');
+            return;
+          }
+        }
+
+        const result = await ImagePicker.launchCameraAsync({
+          mediaTypes: ['images'],
+          allowsEditing: false,
+          quality: 0.8,
+          base64: true,
+        });
+
+        if (!result.canceled && result.assets && result.assets.length > 0) {
+          const asset = result.assets[0];
+          setScanSuccess(true);
+          setTimeout(() => {
+            router.push({
+              pathname: '/add-item',
+              params: {
+                photoCaptured: activeMode === 'item_photo' ? 'true' : undefined,
+                capturedUri: asset.uri,
+                mode: activeMode,
+              },
+            });
+          }, 400);
+        }
+      } catch (err: any) {
+        console.error('Camera capture error:', err);
+      }
     }
   };
 
@@ -174,22 +184,45 @@ export default function WigoUnifiedScannerScreen() {
     }
   };
 
-  const handleGalleryPicker = () => {
-    Alert.alert(
-      'Pick from Gallery',
-      activeMode === 'receipt'
-        ? 'Select receipt or invoice screenshot for Gemini Vision OCR parsing.'
-        : activeMode === 'barcode'
-        ? 'Select barcode or QR code image to scan.'
-        : 'Select product photo from gallery.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Demo Image',
-          onPress: () => handleShutterPress(),
-        },
-      ]
-    );
+  const handleGalleryPicker = async () => {
+    if (activeMode === 'barcode') {
+      Alert.alert('Scan Tag', 'Align physical barcode or QR sticker within the reticle to scan.');
+      return;
+    }
+
+    try {
+      if (Platform.OS !== 'web') {
+        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status !== 'granted') {
+          Alert.alert('Gallery Permission', 'Please enable photo library access in device settings.');
+          return;
+        }
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: false,
+        quality: 0.8,
+        base64: true,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const asset = result.assets[0];
+        setScanSuccess(true);
+        setTimeout(() => {
+          router.push({
+            pathname: '/add-item',
+            params: {
+              photoCaptured: activeMode === 'item_photo' ? 'true' : undefined,
+              capturedUri: asset.uri,
+              mode: activeMode,
+            },
+          });
+        }, 400);
+      }
+    } catch (err: any) {
+      console.error('Gallery picker error:', err);
+    }
   };
 
   // Nav title & subtitle by mode
