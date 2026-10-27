@@ -234,13 +234,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     color: '#FFFFFF',
-    fontFamily: Platform.OS === 'web' ? 'Geist, sans-serif' : undefined,
+    fontFamily: Platform.OS === 'web' ? 'Onest, sans-serif' : undefined,
   },
   subtitle: {
     fontSize: 12,
     color: '#8A8F98',
     marginTop: 1,
-    fontFamily: Platform.OS === 'web' ? 'Geist, sans-serif' : undefined,
+    fontFamily: Platform.OS === 'web' ? 'Onest, sans-serif' : undefined,
   },
   closeBtn: {
     width: 32,
@@ -285,7 +285,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
     color: '#D0D4DC',
-    fontFamily: Platform.OS === 'web' ? 'Geist, sans-serif' : undefined,
+    fontFamily: Platform.OS === 'web' ? 'Onest, sans-serif' : undefined,
   },
   catNameSelected: {
     color: '#FFFFFF',
@@ -326,7 +326,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     color: '#FFFFFF',
     fontSize: 14,
-    fontFamily: Platform.OS === 'web' ? 'Geist, sans-serif' : undefined,
+    fontFamily: Platform.OS === 'web' ? 'Onest, sans-serif' : undefined,
   },
   addBtn: {
     flexDirection: 'row',

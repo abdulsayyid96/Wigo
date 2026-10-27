@@ -186,7 +186,7 @@ export const WIGO_COLORS = {
   statusYellow: '#FEBC2E',
 
   // Borders & Dividers
-  borderSubtle: 'rgba(10, 10, 10, 0.08)', // #0A0A0A14
+  borderSubtle: 'rgba(10, 10, 10, 0.1)', // #0A0A0A14
   dividerSubtle: 'rgba(10, 10, 10, 0.04)', // #0A0A0A0A
   dividerCardDark: 'rgba(255, 255, 255, 0.15)', // #FFFFFF26
 

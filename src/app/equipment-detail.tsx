@@ -32,67 +32,56 @@ import {
   MoreVertical,
   Trash2,
   ZoomIn,
+  Paperclip,
+  Upload
+
 } from 'lucide-react-native';
 
 import { EquipmentItem, WIGO_ITEMS } from '@/constants/wigo-theme';
-import { getWigoItemById, updateWigoItem, deleteWigoItem } from '@/constants/wigo-store';
-import { WigoImageSourceModal } from '@/components/wigo/WigoImageSourceModal';
+import { useWigoItems, deleteWigoItem } from '@/constants/wigo-store';
 
 export default function WigoEquipmentDetailScreen() {
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ id?: string }>();
+  const [items] = useWigoItems();
 
   // Find item from store or fallback to the first item (Makita 18V Angle Grinder mockup default)
   const baseItem = useMemo(() => {
     if (params.id) {
-      const found = getWigoItemById(params.id);
+      const found = items.find((item) => item.id === params.id);
       if (found) return found;
     }
-    return WIGO_ITEMS[0];
-  }, [params.id]);
+    return items[0] || WIGO_ITEMS[0];
+  }, [params.id, items]);
 
-  // Screen editable state (matching mockup values)
-  const [itemName, setItemName] = useState(baseItem.name);
-  const [sku, setSku] = useState(baseItem.sku);
-  const [categoryName, setCategoryName] = useState(baseItem.categoryName || 'Power Tool');
-  const [serialNumber, setSerialNumber] = useState(baseItem.serialNumber || 'SN-8921-X992');
-  const [includedInKit, setIncludedInKit] = useState(
-    baseItem.includedInKit || '2x 5.0Ah Li-ion, Charger, Case'
-  );
-  const [physicalCondition, setPhysicalCondition] = useState(
-    baseItem.physicalCondition || 'Grade A (Excellent)'
-  );
-  const [purchaseInvoice, setPurchaseInvoice] = useState(
-    baseItem.purchaseInvoice || 'INV/2026/10/1889'
-  );
-  const [purchaseDate, setPurchaseDate] = useState(baseItem.purchaseDate || '18 Oct 2026');
-  const [purchaseCostTotal, setPurchaseCostTotal] = useState(
-    baseItem.purchaseCostTotal || 'Rp 2.450.000'
-  );
-  const [totalQuantity, setTotalQuantity] = useState(baseItem.totalQuantity || 5);
-  const [lendingRate, setLendingRate] = useState(baseItem.lendingRate || 'Rp 85.000');
-  const [availableCount, setAvailableCount] = useState(baseItem.availableCount);
-  const [outCount, setOutCount] = useState(baseItem.outCount);
-  const [serviceCount, setServiceCount] = useState(baseItem.serviceCount || 0);
-  const [supplier, setSupplier] = useState(baseItem.supplier || 'Mitra10 Superstore');
-  const [warrantyPeriod, setWarrantyPeriod] = useState(
-    baseItem.warrantyPeriod || '24 Months Official Warranty'
-  );
-  const [invoiceImageUri, setInvoiceImageUri] = useState<string>(
-    baseItem.invoiceImageUri || ''
-  );
+  // Derived values directly from store/database
+  const itemName = baseItem.name;
+  const sku = baseItem.sku;
+  const categoryName = baseItem.categoryName || 'Power Tool';
+  const serialNumber = baseItem.serialNumber || 'SN-8921-X992';
+  const includedInKit = baseItem.includedInKit || '2x 5.0Ah Li-ion, Charger, Case';
+  const physicalCondition = baseItem.physicalCondition || 'Grade A (Excellent)';
+  const purchaseInvoice = baseItem.purchaseInvoice || 'INV/2026/10/1889';
+  const purchaseDate = baseItem.purchaseDate || '18 Oct 2026';
+  const purchaseCostTotal = baseItem.purchaseCostTotal || 'Rp 2.450.000';
+  const totalQuantity = baseItem.totalQuantity || 5;
+  const lendingRate = baseItem.lendingRate || 'Rp 85.000';
+  const availableCount = baseItem.availableCount ?? 3;
+  const outCount = baseItem.outCount ?? 1;
+  const serviceCount = baseItem.serviceCount ?? 0;
+  const supplier = baseItem.supplier || 'Mitra10 Superstore';
+  const warrantyPeriod = baseItem.warrantyPeriod || '24 Months Official Warranty';
+  const invoiceImageUri = baseItem.invoiceImageUri || '';
 
   // Gallery state (5 thumbnail slots)
   const [selectedPhotoIndex, setSelectedPhotoIndex] = useState(0);
 
   // Modals for rich interactivity
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
   const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
   const [isStatsModalOpen, setIsStatsModalOpen] = useState(false);
   const [isContextMenuOpen, setIsContextMenuOpen] = useState(false);
   const [isInvoiceImageModalOpen, setIsInvoiceImageModalOpen] = useState(false);
-  const [isInvoiceImageSourceOpen, setIsInvoiceImageSourceOpen] = useState(false);
 
   // Stock distribution bar calculation
   const totalStock = Math.max(availableCount + outCount + serviceCount, 1);
@@ -105,6 +94,13 @@ export default function WigoEquipmentDetailScreen() {
     lifetime: 'Rp 114.750.000',
     ytd: 'Rp 38.250.000',
     monthly: 'Rp 6.375.000',
+  };
+
+  const handleOpenEditSpecs = () => {
+    router.push({
+      pathname: '/edit-equipment-specs',
+      params: { id: baseItem.id },
+    });
   };
 
   const handleDeleteEquipment = () => {
@@ -126,54 +122,6 @@ export default function WigoEquipmentDetailScreen() {
               },
             ]);
           },
-        },
-      ]
-    );
-  };
-
-  const handleSave = () => {
-    const updated: EquipmentItem = {
-      ...baseItem,
-      name: itemName,
-      sku,
-      categoryName,
-      serialNumber,
-      includedInKit,
-      physicalCondition,
-      purchaseInvoice,
-      purchaseDate,
-      purchaseCostTotal,
-      totalQuantity,
-      lendingRate,
-      cost: lendingRate,
-      availableCount,
-      outCount,
-      serviceCount,
-      supplier,
-      warrantyPeriod,
-      invoiceImageUri: invoiceImageUri || undefined,
-    };
-
-    updateWigoItem(updated);
-
-    Alert.alert('Changes Saved', `Updated equipment details for "${itemName}".`, [
-      {
-        text: 'OK',
-        onPress: () => router.back(),
-      },
-    ]);
-  };
-
-  const handleDiscard = () => {
-    Alert.alert(
-      'Discard Changes',
-      'Are you sure you want to discard your edits?',
-      [
-        { text: 'Keep Editing', style: 'cancel' },
-        {
-          text: 'Discard & Go Back',
-          style: 'destructive',
-          onPress: () => router.back(),
         },
       ]
     );
@@ -363,7 +311,7 @@ export default function WigoEquipmentDetailScreen() {
               <Text style={styles.specsHeaderTitle}>Item Detail</Text>
               <TouchableOpacity
                 activeOpacity={0.7}
-                onPress={() => setIsEditModalOpen(true)}
+                onPress={handleOpenEditSpecs}
                 style={styles.actionBadge}
               >
                 <PenLine size={11} color="#FF5E00" strokeWidth={2.2} />
@@ -373,17 +321,17 @@ export default function WigoEquipmentDetailScreen() {
 
             <View style={styles.specRow}>
               <Text style={styles.rowLabel}>Serial Number</Text>
-              <Text style={styles.rowValueOnest}>{serialNumber}</Text>
+              <Text style={styles.rowValue}>{serialNumber}</Text>
             </View>
 
             <View style={styles.specRow}>
               <Text style={styles.rowLabel}>Included In Kit</Text>
-              <Text style={styles.rowValueGeist}>{includedInKit}</Text>
+              <Text style={styles.rowValue}>{includedInKit}</Text>
             </View>
 
             <View style={styles.specRow}>
               <Text style={styles.rowLabel}>Physical Condition</Text>
-              <Text style={styles.rowValueGeist}>{physicalCondition}</Text>
+              <Text style={styles.rowValue}>{physicalCondition}</Text>
             </View>
           </View>
 
@@ -403,17 +351,17 @@ export default function WigoEquipmentDetailScreen() {
 
             <View style={styles.specRow}>
               <Text style={styles.rowLabel}>Purchase Invoice</Text>
-              <Text style={styles.rowValueOnest}>{purchaseInvoice}</Text>
+              <Text style={styles.rowValue}>{purchaseInvoice}</Text>
             </View>
 
             <View style={styles.specRow}>
               <Text style={styles.rowLabel}>Purchase Date</Text>
-              <Text style={styles.rowValueGeist}>{purchaseDate}</Text>
+              <Text style={styles.rowValue}>{purchaseDate}</Text>
             </View>
 
             <View style={styles.specRow}>
               <Text style={styles.rowLabel}>Purchase Cost Total</Text>
-              <Text style={styles.rowValueOnest}>{purchaseCostTotal}</Text>
+              <Text style={styles.rowValue}>{purchaseCostTotal}</Text>
             </View>
           </View>
 
@@ -423,7 +371,7 @@ export default function WigoEquipmentDetailScreen() {
               <Text style={styles.specsHeaderTitle}>Stock & Rental Rate</Text>
               <TouchableOpacity
                 activeOpacity={0.7}
-                onPress={() => setIsEditModalOpen(true)}
+                onPress={handleOpenEditSpecs}
                 style={styles.actionBadge}
               >
                 <PenLine size={11} color="#FF5E00" strokeWidth={2.2} />
@@ -433,12 +381,12 @@ export default function WigoEquipmentDetailScreen() {
 
             <View style={styles.specRow}>
               <Text style={styles.rowLabel}>Total Quantity</Text>
-              <Text style={styles.rowValueOnest}>{totalQuantity} unit</Text>
+              <Text style={styles.rowValue}>{totalQuantity} unit</Text>
             </View>
 
             <View style={styles.specRow}>
               <Text style={styles.rowLabel}>Lending Rate</Text>
-              <Text style={styles.rowValueGeist}>{lendingRate}</Text>
+              <Text style={styles.rowValue}>{lendingRate}</Text>
             </View>
           </View>
         </ScrollView>
@@ -450,275 +398,24 @@ export default function WigoEquipmentDetailScreen() {
             { paddingBottom: Platform.OS === 'web' ? 16 : Math.max(insets.bottom, 16) },
           ]}
         >
-          {/* Primary Save CTA */}
-          <TouchableOpacity
+          {/* Primary Edit Specs CTA */}
+          {/* <TouchableOpacity
             activeOpacity={0.88}
-            onPress={handleSave}
+            onPress={handleOpenEditSpecs}
             style={styles.saveCtaWrapper}
           >
             <LinearGradient
               colors={['#FF6E1A', '#ED5000']}
               start={{ x: 0, y: 0 }}
               end={{ x: 0, y: 1 }}
-              style={styles.saveCtaGradient}
+              style={[styles.saveCtaGradient, { flexDirection: 'row', gap: 6 }]}
             >
-              <Text style={styles.saveCtaText}>Save Changes</Text>
+              <PenLine size={16} color="#FFFFFF" strokeWidth={2.2} />
+              <Text style={styles.saveCtaText}>Edit Equipment Specs</Text>
             </LinearGradient>
-          </TouchableOpacity>
-
-          {/* Secondary Discard Button */}
-          <TouchableOpacity
-            activeOpacity={0.7}
-            onPress={handleDiscard}
-            style={styles.discardButton}
-          >
-            <Text style={styles.discardButtonText}>Discard Changes</Text>
-          </TouchableOpacity>
+          </TouchableOpacity> */}
         </View>
       </View>
-
-      {/* Edit Specs Modal */}
-      <Modal
-        visible={isEditModalOpen}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setIsEditModalOpen(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalDialog}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Edit Equipment Specs</Text>
-              <TouchableOpacity
-                onPress={() => setIsEditModalOpen(false)}
-                style={styles.modalCloseBtn}
-              >
-                <X size={18} color="#0A0A0A" />
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView style={styles.modalFormScroll} showsVerticalScrollIndicator={false}>
-              <View style={styles.formGroup}>
-                <Text style={styles.inputLabel}>Equipment Name</Text>
-                <TextInput
-                  value={itemName}
-                  onChangeText={setItemName}
-                  style={styles.inputField}
-                  placeholder="e.g. Makita Angle Grinder"
-                  placeholderTextColor="rgba(10, 10, 10, 0.3)"
-                />
-              </View>
-
-              <View style={styles.formGroup}>
-                <Text style={styles.inputLabel}>Serial Number</Text>
-                <TextInput
-                  value={serialNumber}
-                  onChangeText={setSerialNumber}
-                  style={styles.inputField}
-                  placeholder="e.g. SN-8921-X992"
-                  placeholderTextColor="rgba(10, 10, 10, 0.3)"
-                />
-              </View>
-
-              <View style={styles.formGroup}>
-                <Text style={styles.inputLabel}>Included in Kit</Text>
-                <TextInput
-                  value={includedInKit}
-                  onChangeText={setIncludedInKit}
-                  style={styles.inputField}
-                  placeholder="e.g. 2x Batteries, Charger"
-                  placeholderTextColor="rgba(10, 10, 10, 0.3)"
-                />
-              </View>
-
-              <View style={styles.formGroup}>
-                <Text style={styles.inputLabel}>Physical Condition</Text>
-                <TextInput
-                  value={physicalCondition}
-                  onChangeText={setPhysicalCondition}
-                  style={styles.inputField}
-                  placeholder="e.g. Grade A (Excellent)"
-                  placeholderTextColor="rgba(10, 10, 10, 0.3)"
-                />
-              </View>
-
-              <View style={styles.formGroup}>
-                <Text style={styles.inputLabel}>Lending Rate (per day)</Text>
-                <TextInput
-                  value={lendingRate}
-                  onChangeText={setLendingRate}
-                  style={styles.inputField}
-                  placeholder="e.g. Rp 85.000"
-                  placeholderTextColor="rgba(10, 10, 10, 0.3)"
-                />
-              </View>
-
-              <View style={styles.formGroup}>
-                <Text style={styles.inputLabel}>SKU Code</Text>
-                <TextInput
-                  value={sku}
-                  onChangeText={setSku}
-                  style={styles.inputField}
-                  placeholder="e.g. MKT-18V-GRD"
-                  placeholderTextColor="rgba(10, 10, 10, 0.3)"
-                />
-              </View>
-
-              <View style={styles.formGroup}>
-                <Text style={styles.inputLabel}>Category</Text>
-                <TextInput
-                  value={categoryName}
-                  onChangeText={setCategoryName}
-                  style={styles.inputField}
-                  placeholder="e.g. Power Tool"
-                  placeholderTextColor="rgba(10, 10, 10, 0.3)"
-                />
-              </View>
-
-              <View style={styles.formGroup}>
-                <Text style={styles.inputLabel}>Total Quantity</Text>
-                <TextInput
-                  value={totalQuantity.toString()}
-                  onChangeText={(val) => {
-                    const parsed = parseInt(val, 10);
-                    if (!isNaN(parsed) && parsed >= 0) setTotalQuantity(parsed);
-                  }}
-                  keyboardType="number-pad"
-                  style={styles.inputField}
-                />
-              </View>
-
-              <View style={styles.formGroup}>
-                <Text style={styles.inputLabel}>Available Stock</Text>
-                <TextInput
-                  value={availableCount.toString()}
-                  onChangeText={(val) => {
-                    const parsed = parseInt(val, 10);
-                    if (!isNaN(parsed) && parsed >= 0) setAvailableCount(parsed);
-                  }}
-                  keyboardType="number-pad"
-                  style={styles.inputField}
-                />
-              </View>
-
-              <View style={styles.formGroup}>
-                <Text style={styles.inputLabel}>Rented Out</Text>
-                <TextInput
-                  value={outCount.toString()}
-                  onChangeText={(val) => {
-                    const parsed = parseInt(val, 10);
-                    if (!isNaN(parsed) && parsed >= 0) setOutCount(parsed);
-                  }}
-                  keyboardType="number-pad"
-                  style={styles.inputField}
-                />
-              </View>
-
-              <View style={styles.formGroup}>
-                <Text style={styles.inputLabel}>In Service / Maintenance</Text>
-                <TextInput
-                  value={serviceCount.toString()}
-                  onChangeText={(val) => {
-                    const parsed = parseInt(val, 10);
-                    if (!isNaN(parsed) && parsed >= 0) setServiceCount(parsed);
-                  }}
-                  keyboardType="number-pad"
-                  style={styles.inputField}
-                />
-              </View>
-
-              <View style={styles.formGroup}>
-                <Text style={styles.inputLabel}>Purchase Invoice</Text>
-                <TextInput
-                  value={purchaseInvoice}
-                  onChangeText={setPurchaseInvoice}
-                  style={styles.inputField}
-                  placeholder="e.g. INV/2026/10/1889"
-                  placeholderTextColor="rgba(10, 10, 10, 0.3)"
-                />
-              </View>
-
-              <View style={styles.formGroup}>
-                <Text style={styles.inputLabel}>Supplier / Store</Text>
-                <TextInput
-                  value={supplier}
-                  onChangeText={setSupplier}
-                  style={styles.inputField}
-                  placeholder="e.g. Mitra10 Superstore"
-                  placeholderTextColor="rgba(10, 10, 10, 0.3)"
-                />
-              </View>
-
-              <View style={styles.formGroup}>
-                <Text style={styles.inputLabel}>Warranty Period</Text>
-                <TextInput
-                  value={warrantyPeriod}
-                  onChangeText={setWarrantyPeriod}
-                  style={styles.inputField}
-                  placeholder="e.g. 24 Months Official Warranty"
-                  placeholderTextColor="rgba(10, 10, 10, 0.3)"
-                />
-              </View>
-
-              <View style={styles.formGroup}>
-                <Text style={styles.inputLabel}>Invoice / Receipt Picture</Text>
-                <View style={styles.editInvoiceRow}>
-                  {invoiceImageUri ? (
-                    <Image source={{ uri: invoiceImageUri }} style={styles.editInvoiceThumb} />
-                  ) : null}
-                  <TouchableOpacity
-                    activeOpacity={0.7}
-                    onPress={() => setIsInvoiceImageSourceOpen(true)}
-                    style={styles.editInvoiceBtn}
-                  >
-                    <Text style={styles.editInvoiceBtnText}>
-                      {invoiceImageUri ? 'Change Invoice Photo' : 'Attach Invoice Photo'}
-                    </Text>
-                  </TouchableOpacity>
-                  {invoiceImageUri ? (
-                    <TouchableOpacity
-                      activeOpacity={0.7}
-                      onPress={() => setInvoiceImageUri('')}
-                      style={[styles.editInvoiceBtn, { backgroundColor: '#FEE2E2', borderColor: '#FCA5A5' }]}
-                    >
-                      <Text style={[styles.editInvoiceBtnText, { color: '#E02424' }]}>Remove</Text>
-                    </TouchableOpacity>
-                  ) : null}
-                </View>
-              </View>
-
-              <View style={styles.formGroup}>
-                <Text style={styles.inputLabel}>Purchase Date</Text>
-                <TextInput
-                  value={purchaseDate}
-                  onChangeText={setPurchaseDate}
-                  style={styles.inputField}
-                  placeholder="e.g. 18 Oct 2026"
-                  placeholderTextColor="rgba(10, 10, 10, 0.3)"
-                />
-              </View>
-
-              <View style={styles.formGroup}>
-                <Text style={styles.inputLabel}>Purchase Total Cost</Text>
-                <TextInput
-                  value={purchaseCostTotal}
-                  onChangeText={setPurchaseCostTotal}
-                  style={styles.inputField}
-                  placeholder="e.g. Rp 2.450.000"
-                  placeholderTextColor="rgba(10, 10, 10, 0.3)"
-                />
-              </View>
-            </ScrollView>
-
-            <TouchableOpacity
-              activeOpacity={0.85}
-              onPress={() => setIsEditModalOpen(false)}
-              style={styles.modalDoneBtn}
-            >
-              <Text style={styles.modalDoneText}>Done Editing</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
 
       {/* History Modal */}
       <Modal
@@ -829,11 +526,11 @@ export default function WigoEquipmentDetailScreen() {
             <View style={styles.invoiceCard}>
               <View style={styles.specRow}>
                 <Text style={styles.rowLabel}>Invoice No.</Text>
-                <Text style={styles.rowValueOnest}>{purchaseInvoice || '-'}</Text>
+                <Text style={styles.rowValue}>{purchaseInvoice || '-'}</Text>
               </View>
               <View style={styles.specRow}>
                 <Text style={styles.rowLabel}>Supplier / Store</Text>
-                <Text style={styles.rowValueGeist}>{supplier || 'Mitra10 Superstore'}</Text>
+                <Text style={styles.rowValue}>{supplier || 'Mitra10 Superstore'}</Text>
               </View>
               <View style={styles.specRow}>
                 <Text style={styles.rowLabel}>Warranty Period</Text>
@@ -885,11 +582,11 @@ export default function WigoEquipmentDetailScreen() {
               </View>
               <View style={styles.specRow}>
                 <Text style={styles.rowLabel}>Average Rental Duration</Text>
-                <Text style={styles.rowValueGeist}>3.4 days / rental</Text>
+                <Text style={styles.rowValue}>3.4 days / rental</Text>
               </View>
               <View style={styles.specRow}>
                 <Text style={styles.rowLabel}>Lifetime Rental Events</Text>
-                <Text style={styles.rowValueOnest}>1,350 bookings</Text>
+                <Text style={styles.rowValue}>1,350 bookings</Text>
               </View>
             </View>
 
@@ -920,11 +617,25 @@ export default function WigoEquipmentDetailScreen() {
             style={[
               styles.contextMenuDropdown,
               {
-                top: Platform.OS === 'web' ? 56 : insets.top + 20,
+                top: Platform.OS === 'web' ? 56 : insets.top + 23,
                 right: 16,
               },
             ]}
           >
+            <TouchableOpacity
+              style={styles.contextMenuItem}
+              activeOpacity={0.7}
+              onPress={() => {
+                setIsContextMenuOpen(false);
+                handleOpenEditSpecs();
+              }}
+            >
+              <PenLine size={16} color="#0A0A0A" strokeWidth={2} />
+              <Text style={styles.contextMenuText}>Edit Specs</Text>
+            </TouchableOpacity>
+
+            <View style={styles.contextMenuDivider} />
+
             <TouchableOpacity
               style={styles.contextMenuItem}
               activeOpacity={0.7}
@@ -978,17 +689,6 @@ export default function WigoEquipmentDetailScreen() {
           ) : null}
         </View>
       </Modal>
-
-      {/* Image Picker / Camera for Invoice Picture */}
-      <WigoImageSourceModal
-        visible={isInvoiceImageSourceOpen}
-        onClose={() => setIsInvoiceImageSourceOpen(false)}
-        title="Upload Purchase Invoice"
-        subtitle="Photograph paper receipt or choose image from library"
-        onImageSelected={(res) => {
-          setInvoiceImageUri(res.uri);
-        }}
-      />
     </View>
   );
 }
@@ -1029,7 +729,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   statusBarTime: {
-    fontFamily: 'Geist_500Medium',
+    fontFamily: 'Onest_500Medium',
     fontSize: 14,
     fontWeight: '500',
     color: '#0A0A0A',
@@ -1066,7 +766,7 @@ const styles = StyleSheet.create({
     gap: 1,
   },
   screenTitle: {
-    fontFamily: 'Geist_600SemiBold',
+    fontFamily: 'Onest_600SemiBold',
     fontSize: 16,
     fontWeight: '600',
     color: '#0A0A0A',
@@ -1143,7 +843,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   modelSpecsTitle: {
-    fontFamily: 'Geist_600SemiBold',
+    fontFamily: 'Onest_600SemiBold',
     fontSize: 16,
     fontWeight: '600',
     color: '#0A0A0A',
@@ -1268,7 +968,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   rowLabel: {
-    fontFamily: 'Geist_400Regular',
+    fontFamily: 'Onest_400Regular',
     fontSize: 12,
     fontWeight: '400',
     color: 'rgba(10, 10, 10, 0.6)',
@@ -1279,14 +979,8 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: '#28C840',
   },
-  rowValueOnest: {
+  rowValue: {
     fontFamily: 'Onest_500Medium',
-    fontSize: 12,
-    fontWeight: '500',
-    color: '#0A0A0A',
-  },
-  rowValueGeist: {
-    fontFamily: 'Geist_500Medium',
     fontSize: 12,
     fontWeight: '500',
     color: '#0A0A0A',
@@ -1332,7 +1026,7 @@ const styles = StyleSheet.create({
     }),
   },
   saveCtaText: {
-    fontFamily: 'Geist_600SemiBold',
+    fontFamily: 'Onest_600SemiBold',
     fontSize: 14,
     fontWeight: '600',
     color: '#FFFFFF',
@@ -1349,7 +1043,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   discardButtonText: {
-    fontFamily: 'Geist_500Medium',
+    fontFamily: 'Onest_500Medium',
     fontSize: 13,
     fontWeight: '500',
     color: 'rgba(10, 10, 10, 0.6)',
@@ -1386,7 +1080,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   modalTitle: {
-    fontFamily: 'Geist_600SemiBold',
+    fontFamily: 'Onest_600SemiBold',
     fontSize: 16,
     fontWeight: '600',
     color: '#0A0A0A',
@@ -1407,7 +1101,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   inputLabel: {
-    fontFamily: 'Geist_500Medium',
+    fontFamily: 'Onest_500Medium',
     fontSize: 12,
     color: 'rgba(10, 10, 10, 0.7)',
   },
@@ -1417,7 +1111,7 @@ const styles = StyleSheet.create({
     borderWidth: 0.5,
     borderColor: 'rgba(10, 10, 10, 0.15)',
     paddingHorizontal: 12,
-    fontFamily: 'Geist_400Regular',
+    fontFamily: 'Onest_400Regular',
     fontSize: 13,
     color: '#0A0A0A',
     backgroundColor: '#FAFAFA',
@@ -1430,7 +1124,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   modalDoneText: {
-    fontFamily: 'Geist_600SemiBold',
+    fontFamily: 'Onest_600SemiBold',
     fontSize: 14,
     color: '#FFFFFF',
   },
@@ -1467,7 +1161,7 @@ const styles = StyleSheet.create({
     marginTop: 5,
   },
   historyTitle: {
-    fontFamily: 'Geist_500Medium',
+    fontFamily: 'Onest_500Medium',
     fontSize: 13,
     color: '#0A0A0A',
   },
@@ -1510,7 +1204,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   contextMenuText: {
-    fontFamily: 'Geist_500Medium',
+    fontFamily: 'Onest_500Medium',
     fontSize: 14,
     color: '#0A0A0A',
   },
@@ -1548,7 +1242,7 @@ const styles = StyleSheet.create({
   },
   tapToZoomText: {
     color: '#FFFFFF',
-    fontFamily: 'Geist_500Medium',
+    fontFamily: 'Onest_500Medium',
     fontSize: 11,
   },
   noInvoiceImagePlaceholder: {
@@ -1566,12 +1260,12 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   noInvoiceText: {
-    fontFamily: 'Geist_600SemiBold',
+    fontFamily: 'Onest_600SemiBold',
     fontSize: 13,
     color: '#0A0A0A',
   },
   noInvoiceSubtext: {
-    fontFamily: 'Geist_400Regular',
+    fontFamily: 'Onest_400Regular',
     fontSize: 11,
     color: '#7D8187',
     textAlign: 'center',
@@ -1620,7 +1314,8 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(10, 10, 10, 0.15)',
   },
   editInvoiceBtnText: {
-    fontFamily: 'Geist_500Medium',
+    width: 14,
+    fontFamily: 'Onest_500Medium',
     fontSize: 12,
     color: '#0A0A0A',
   },

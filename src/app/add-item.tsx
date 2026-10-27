@@ -489,7 +489,7 @@ export default function WigoAddItemScreen() {
                     onChangeText={setItemName}
                     placeholder="e.g. Makita 18V Brushless Angle Grinder"
                     placeholderTextColor={WIGO_COLORS.textPlaceholder}
-                    style={[styles.inputTextGeist, { flex: 1 }]}
+                    style={[styles.inputText, { flex: 1 }]}
                   />
                   {itemName.length > 0 && (
                     <TouchableOpacity
@@ -513,7 +513,7 @@ export default function WigoAddItemScreen() {
                     onPress={() => setIsCategoryPickerOpen(true)}
                     style={styles.inputBoxBetween}
                   >
-                    <Text style={styles.inputTextGeist} numberOfLines={1}>
+                    <Text style={styles.inputText} numberOfLines={1}>
                       {category}
                     </Text>
                     <ChevronDown size={14} color="#7D8187" strokeWidth={2} />
@@ -529,7 +529,7 @@ export default function WigoAddItemScreen() {
                       onChangeText={(t) => setSku(t.toUpperCase())}
                       placeholder="e.g. MKT-18V-GRD"
                       placeholderTextColor={WIGO_COLORS.textPlaceholder}
-                      style={[styles.inputTextOnest, { flex: 1 }]}
+                      style={[styles.inputText, { flex: 1 }]}
                       autoCapitalize="characters"
                     />
                     {sku.length > 0 && (
@@ -549,7 +549,7 @@ export default function WigoAddItemScreen() {
             <View style={styles.sectionCard}>
               <View style={styles.sectionHeader}>
                 <View style={styles.sectionTitleCol}>
-                  <Text style={styles.sectionTitleSmall}>Invoice & Purchase Data</Text>
+                  <Text style={styles.sectionTitle}>Invoice & Purchase Data</Text>
                   <Text style={styles.sectionSubtitle}>Information about purchase & billing</Text>
                 </View>
                 {isAiParsed && (
@@ -570,7 +570,7 @@ export default function WigoAddItemScreen() {
                     onPress={() => setIsDatePickerOpen(true)}
                     style={styles.inputBoxBetween}
                   >
-                    <Text style={styles.inputTextOnest}>{purchaseDate}</Text>
+                    <Text style={styles.inputText}>{purchaseDate}</Text>
                     <CalendarIcon size={14} color="#7D8187" strokeWidth={2} />
                   </TouchableOpacity>
                 </View>
@@ -584,7 +584,7 @@ export default function WigoAddItemScreen() {
                       onChangeText={setSupplier}
                       placeholder="e.g. Mitra10 Hardware"
                       placeholderTextColor={WIGO_COLORS.textPlaceholder}
-                      style={[styles.inputTextGeist, { flex: 1 }]}
+                      style={[styles.inputText, { flex: 1 }]}
                     />
                     {supplier.length > 0 && (
                       <TouchableOpacity
@@ -609,7 +609,7 @@ export default function WigoAddItemScreen() {
                       onChangeText={handlePurchaseCostChange}
                       placeholder="Rp 0"
                       placeholderTextColor={WIGO_COLORS.textPlaceholder}
-                      style={[styles.inputTextOnest, { flex: 1 }]}
+                      style={[styles.inputText, { flex: 1 }]}
                       keyboardType="numeric"
                     />
                     {purchaseCost.length > 0 && (
@@ -637,7 +637,7 @@ export default function WigoAddItemScreen() {
                       onChangeText={handleUnitCostChange}
                       placeholder="Rp 0"
                       placeholderTextColor={WIGO_COLORS.textPlaceholder}
-                      style={[styles.inputTextOnest, { flex: 1 }]}
+                      style={[styles.inputText, { flex: 1 }]}
                       keyboardType="numeric"
                     />
                     {unitCost.length > 0 && (
@@ -662,7 +662,7 @@ export default function WigoAddItemScreen() {
                       onChangeText={setWarrantyPeriod}
                       placeholder="e.g. 24 Months Official Warranty"
                       placeholderTextColor={WIGO_COLORS.textPlaceholder}
-                      style={[styles.inputTextGeist, { flex: 1 }]}
+                      style={[styles.inputText, { flex: 1 }]}
                     />
                     {warrantyPeriod.length > 0 && (
                       <TouchableOpacity
@@ -681,7 +681,7 @@ export default function WigoAddItemScreen() {
             <View style={styles.sectionCard}>
               <View style={styles.sectionHeader}>
                 <View style={styles.sectionTitleCol}>
-                  <Text style={styles.sectionTitleSmall}>Stock & Rental Rate</Text>
+                  <Text style={styles.sectionTitle}>Stock & Rental Rate</Text>
                   <Text style={styles.sectionSubtitle}>Set item quantity & rental rate</Text>
                 </View>
               </View>
@@ -729,7 +729,7 @@ export default function WigoAddItemScreen() {
                       onChangeText={handleLendingRateChange}
                       placeholder="Rp 0"
                       placeholderTextColor={WIGO_COLORS.textPlaceholder}
-                      style={[styles.inputTextOnest, { flex: 1 }]}
+                      style={[styles.inputText, { flex: 1 }]}
                       keyboardType="numeric"
                     />
                     {lendingRate.length > 0 && (
@@ -893,7 +893,7 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   statusBarTime: {
-    fontFamily: 'Geist_500Medium',
+    fontFamily: 'Onest_500Medium',
     fontSize: 14,
     fontWeight: '500',
     color: '#0A0A0A',
@@ -931,7 +931,7 @@ const styles = StyleSheet.create({
     gap: 1,
   },
   screenTitle: {
-    fontFamily: 'Geist_600SemiBold',
+    fontFamily: 'Onest_600SemiBold',
     fontSize: 16,
     fontWeight: '600',
     color: '#0A0A0A',
@@ -1067,15 +1067,15 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   sectionTitle: {
-    fontFamily: 'Onest_400Regular',
+    fontFamily: 'Onest_500Medium',
     fontSize: 16,
-    fontWeight: '800',
+    fontWeight: '500',
     color: '#0A0A0A',
   },
   sectionTitleSmall: {
-    fontFamily: 'Onest_400Regular',
+    fontFamily: 'Onest_500Medium',
     fontSize: 16,
-    fontWeight: '800',
+    fontWeight: '500',
     color: '#0A0A0A',
   },
   sectionSubtitle: {
@@ -1116,7 +1116,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   fieldLabel: {
-    fontFamily: 'Geist_400Regular',
+    fontFamily: 'Onest_400Regular',
     fontSize: 12,
     fontWeight: '400',
     color: 'rgba(10, 10, 10, 0.6)',
@@ -1160,17 +1160,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  inputTextGeist: {
-    fontFamily: 'Geist_400Regular',
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#0A0A0A',
-    padding: 0,
-    margin: 0,
-  },
-  inputTextOnest: {
+  inputText: {
     fontFamily: 'Onest_500Medium',
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '500',
     color: '#0A0A0A',
     letterSpacing: -0.2,
@@ -1238,13 +1230,13 @@ const styles = StyleSheet.create({
     gap: 1,
   },
   noticeTitle: {
-    fontFamily: 'Geist_500Medium',
+    fontFamily: 'Onest_500Medium',
     fontSize: 12,
     fontWeight: '500',
     color: '#0A0A0A',
   },
   noticeSub: {
-    fontFamily: 'Geist_400Regular',
+    fontFamily: 'Onest_400Regular',
     fontSize: 12,
     fontWeight: '400',
     color: '#7D8187',
@@ -1291,7 +1283,7 @@ const styles = StyleSheet.create({
     }),
   },
   savePrintText: {
-    fontFamily: 'Geist_600SemiBold',
+    fontFamily: 'Onest_600SemiBold',
     fontSize: 14,
     fontWeight: '600',
     color: '#FFFFFF',
@@ -1310,7 +1302,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   saveDraftText: {
-    fontFamily: 'Geist_500Medium',
+    fontFamily: 'Onest_500Medium',
     fontSize: 13,
     fontWeight: '500',
     color: 'rgba(10, 10, 10, 0.6)',

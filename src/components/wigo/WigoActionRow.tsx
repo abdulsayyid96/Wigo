@@ -81,7 +81,7 @@ const styles = StyleSheet.create({
     }),
   },
   scanButtonText: {
-    fontFamily: 'Geist_500Medium',
+    fontFamily: 'Onest_500Medium',
     fontSize: 14,
     fontWeight: '500',
     color: WIGO_COLORS.textWhite,
@@ -100,7 +100,7 @@ const styles = StyleSheet.create({
     borderColor: WIGO_COLORS.borderSubtle,
   },
   addItemText: {
-    fontFamily: 'Geist_500Medium',
+    fontFamily: 'Onest_500Medium',
     fontSize: 14,
     fontWeight: '500',
     color: WIGO_COLORS.textDark,

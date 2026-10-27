@@ -115,7 +115,7 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     flex: 1,
-    fontFamily: 'Geist_400Regular',
+    fontFamily: 'Onest_400Regular',
     fontSize: 13,
     color: WIGO_COLORS.textDark,
     paddingVertical: 0,
@@ -144,7 +144,7 @@ const styles = StyleSheet.create({
     borderColor: WIGO_COLORS.borderSubtle,
   },
   chipLabel: {
-    fontFamily: 'Geist_500Medium',
+    fontFamily: 'Onest_500Medium',
     fontSize: 11,
     lineHeight: 14,
   },

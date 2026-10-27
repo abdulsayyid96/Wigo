@@ -13,7 +13,7 @@ export function WigoHeader({ onPrinterPress, onNotificationsPress }: WigoHeaderP
     <View style={styles.header}>
       {/* Brand Box */}
       <View style={styles.brandBox}>
-        <Text style={styles.brandTitle}>Wigo</Text>
+        <Text style={styles.brandTitle}>wigo</Text>
       </View>
 
       {/* Header Actions */}
@@ -58,7 +58,7 @@ const styles = StyleSheet.create({
     fontSize: 32,
     fontWeight: '700',
     color: WIGO_COLORS.textDark,
-    letterSpacing: -1.5,
+    letterSpacing: -2,
     lineHeight: 42,
   },
   headerActions: {

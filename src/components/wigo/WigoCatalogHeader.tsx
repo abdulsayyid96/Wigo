@@ -38,7 +38,7 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
   },
   sectionTitle: {
-    fontFamily: 'Geist_500Medium',
+    fontFamily: 'Onest_500Medium',
     fontSize: 16,
     fontWeight: '800',
     color: WIGO_COLORS.textDark,

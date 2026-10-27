@@ -849,7 +849,7 @@ const styles = StyleSheet.create({
     gap: 1,
   },
   navTitle: {
-    fontFamily: 'Geist_600SemiBold',
+    fontFamily: 'Onest_600SemiBold',
     fontSize: 16,
     fontWeight: '600',
     color: '#FFFFFF',
@@ -905,12 +905,12 @@ const styles = StyleSheet.create({
     fontSize: 11,
   },
   modeTabTextActive: {
-    fontFamily: 'Geist_500Medium',
+    fontFamily: 'Onest_500Medium',
     fontWeight: '500',
     color: '#0A0A0A',
   },
   modeTabTextInactive: {
-    fontFamily: 'Geist_400Regular',
+    fontFamily: 'Onest_400Regular',
     fontWeight: '400',
     color: 'rgba(255, 255, 255, 0.60)',
   },
@@ -1028,14 +1028,14 @@ const styles = StyleSheet.create({
     gap: 3,
   },
   receiptStoreName: {
-    fontFamily: 'Geist_700Bold',
+    fontFamily: 'Onest_700Bold',
     fontSize: 12,
     fontWeight: '700',
     color: '#0A0A0A',
     letterSpacing: 0.5,
   },
   receiptDate: {
-    fontFamily: 'Geist_400Regular',
+    fontFamily: 'Onest_400Regular',
     fontSize: 9,
     color: '#7D8187',
   },
@@ -1066,31 +1066,31 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   receiptItemTitle: {
-    fontFamily: 'Geist_600SemiBold',
+    fontFamily: 'Onest_600SemiBold',
     fontSize: 10,
     fontWeight: '600',
     color: '#0A0A0A',
     flex: 1,
   },
   receiptItemPrice: {
-    fontFamily: 'Geist_600SemiBold',
+    fontFamily: 'Onest_600SemiBold',
     fontSize: 10,
     fontWeight: '600',
     color: '#0A0A0A',
   },
   receiptItemSku: {
-    fontFamily: 'Geist_400Regular',
+    fontFamily: 'Onest_400Regular',
     fontSize: 8.5,
     color: '#7D8187',
   },
   receiptTotalLabel: {
-    fontFamily: 'Geist_700Bold',
+    fontFamily: 'Onest_700Bold',
     fontSize: 10,
     fontWeight: '700',
     color: '#0A0A0A',
   },
   receiptTotalAmount: {
-    fontFamily: 'Geist_700Bold',
+    fontFamily: 'Onest_700Bold',
     fontSize: 11,
     fontWeight: '700',
     color: '#ff5e00',
@@ -1128,7 +1128,7 @@ const styles = StyleSheet.create({
     borderRadius: 1,
   },
   barcodeText: {
-    fontFamily: 'Geist_400Regular',
+    fontFamily: 'Onest_400Regular',
     fontSize: 7.5,
     color: '#7D8187',
     letterSpacing: 2,
@@ -1152,7 +1152,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   barcodeCodeText: {
-    fontFamily: 'Geist_500Medium',
+    fontFamily: 'Onest_500Medium',
     fontSize: 11,
     color: '#FF5E00',
     letterSpacing: 1,
@@ -1164,7 +1164,7 @@ const styles = StyleSheet.create({
     borderRadius: 9999,
   },
   barcodeAimText: {
-    fontFamily: 'Geist_400Regular',
+    fontFamily: 'Onest_400Regular',
     fontSize: 10,
     color: 'rgba(255, 255, 255, 0.7)',
   },
@@ -1195,7 +1195,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   productSilhouetteText: {
-    fontFamily: 'Geist_400Regular',
+    fontFamily: 'Onest_400Regular',
     fontSize: 11,
     color: 'rgba(255, 255, 255, 0.55)',
     textAlign: 'center',
@@ -1232,7 +1232,7 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   successTitle: {
-    fontFamily: 'Geist_600SemiBold',
+    fontFamily: 'Onest_600SemiBold',
     fontSize: 16,
     fontWeight: '600',
     color: '#FFFFFF',
@@ -1258,7 +1258,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   ocrFeedbackText: {
-    fontFamily: 'Geist_500Medium',
+    fontFamily: 'Onest_500Medium',
     fontSize: 12,
     fontWeight: '500',
     color: '#FFFFFF',
@@ -1368,13 +1368,13 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   modalTitle: {
-    fontFamily: 'Geist_600SemiBold',
+    fontFamily: 'Onest_600SemiBold',
     fontSize: 17,
     fontWeight: '600',
     color: '#0A0A0A',
   },
   modalSku: {
-    fontFamily: 'Geist_400Regular',
+    fontFamily: 'Onest_400Regular',
     fontSize: 13,
     color: '#7D8187',
   },
@@ -1393,13 +1393,13 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   stockLabel: {
-    fontFamily: 'Geist_500Medium',
+    fontFamily: 'Onest_500Medium',
     fontSize: 9.5,
     color: '#7D8187',
     letterSpacing: 0.5,
   },
   stockValue: {
-    fontFamily: 'Geist_700Bold',
+    fontFamily: 'Onest_700Bold',
     fontSize: 22,
     fontWeight: '700',
   },
@@ -1426,7 +1426,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#28C840',
   },
   segmentedBtnText: {
-    fontFamily: 'Geist_500Medium',
+    fontFamily: 'Onest_500Medium',
     fontSize: 13,
     fontWeight: '500',
     color: '#0A0A0A',
@@ -1449,7 +1449,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   confirmButtonText: {
-    fontFamily: 'Geist_600SemiBold',
+    fontFamily: 'Onest_600SemiBold',
     fontSize: 14,
     fontWeight: '600',
     color: '#FFFFFF',

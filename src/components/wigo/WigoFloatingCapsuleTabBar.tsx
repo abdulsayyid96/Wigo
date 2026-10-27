@@ -127,7 +127,7 @@ const styles = StyleSheet.create({
         shadowRadius: 16,
       },
       android: {
-        elevation: 6,
+        elevation: 7,
       },
       web: {
         boxShadow: '0 4px 16px rgba(10, 10, 10, 0.08)',
@@ -162,7 +162,7 @@ const styles = StyleSheet.create({
         shadowRadius: 6,
       },
       android: {
-        elevation: 4,
+        elevation: 0,
       },
       web: {
         boxShadow: 'inset 0 1.5px 1px rgba(255, 255, 255, 0.5), inset 0 -1.5px 1px rgba(0, 0, 0, 0.2)',

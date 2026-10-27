@@ -178,7 +178,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   title: {
-    fontFamily: 'Geist_600SemiBold',
+    fontFamily: 'Onest_600SemiBold',
     fontSize: 16,
     fontWeight: '600',
     color: WIGO_COLORS.textDark,
@@ -212,7 +212,7 @@ const styles = StyleSheet.create({
     borderColor: WIGO_COLORS.borderSubtle,
   },
   quickActionText: {
-    fontFamily: 'Geist_500Medium',
+    fontFamily: 'Onest_500Medium',
     fontSize: 11,
     color: WIGO_COLORS.textDark,
   },
@@ -231,7 +231,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingVertical: 10,
     paddingHorizontal: 14,
-    fontFamily: 'Geist_400Regular',
+    fontFamily: 'Onest_400Regular',
     fontSize: 13,
     color: WIGO_COLORS.textDark,
     borderWidth: 0.5,
@@ -255,7 +255,7 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   saveBtnText: {
-    fontFamily: 'Geist_500Medium',
+    fontFamily: 'Onest_500Medium',
     fontSize: 14,
     fontWeight: '500',
     color: WIGO_COLORS.textWhite,

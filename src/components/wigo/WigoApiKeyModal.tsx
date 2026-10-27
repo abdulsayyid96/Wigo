@@ -167,7 +167,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '700',
     color: '#FFFFFF',
-    fontFamily: Platform.OS === 'web' ? 'Geist, sans-serif' : undefined,
+    fontFamily: Platform.OS === 'web' ? 'Onest, sans-serif' : undefined,
   },
   subtitle: {
     fontSize: 11,

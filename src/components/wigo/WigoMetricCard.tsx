@@ -132,7 +132,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   metricLabel: {
-    fontFamily: 'Geist_400Regular',
+    fontFamily: 'Onest_400Regular',
     fontSize: 12,
     fontWeight: '500',
     color: WIGO_COLORS.textWhite,
@@ -179,7 +179,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   columnLabel: {
-    fontFamily: 'Geist_400Regular',
+    fontFamily: 'Onest_400Regular',
     fontSize: 12,
     fontWeight: '400',
     color: WIGO_COLORS.textWhite,

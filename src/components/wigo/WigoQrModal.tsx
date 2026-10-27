@@ -259,7 +259,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   labelTitle: {
-    fontFamily: 'Geist_500Medium',
+    fontFamily: 'Onest_500Medium',
     fontSize: 13,
     fontWeight: '500',
     color: WIGO_COLORS.textDark,
@@ -289,7 +289,7 @@ const styles = StyleSheet.create({
     backgroundColor: WIGO_COLORS.statusGreen,
   },
   printButtonText: {
-    fontFamily: 'Geist_500Medium',
+    fontFamily: 'Onest_500Medium',
     fontSize: 14,
     fontWeight: '500',
     color: WIGO_COLORS.textWhite,

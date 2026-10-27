@@ -35,6 +35,7 @@ import {
 import { WigoQrModal } from '@/components/wigo/WigoQrModal';
 import { WigoScanModal } from '@/components/wigo/WigoScanModal';
 import { WigoAddItemModal } from '@/components/wigo/WigoAddItemModal';
+import { WigoItemCardV2 } from '@/components/wigo/WigoItemCardV2';
 
 export default function WigoDashboardScreen() {
   const [items, addItem] = useWigoItems();
@@ -213,7 +214,18 @@ export default function WigoDashboardScreen() {
                 </View>
               ) : (
                 filteredItems.map((item) => (
-                  <WigoItemCard
+                  // <WigoItemCard
+                  //   key={item.id}
+                  //   item={item}
+                  //   onPress={() =>
+                  //     router.push({
+                  //       pathname: '/equipment-detail',
+                  //       params: { id: item.id },
+                  //     })
+                  //   }
+                  //   onQrPress={() => setSelectedQrItem(item)}
+                  // />
+                  <WigoItemCardV2
                     key={item.id}
                     item={item}
                     onPress={() =>
@@ -346,7 +358,7 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   emptyTitle: {
-    fontFamily: 'Geist_600SemiBold',
+    fontFamily: 'Onest_600SemiBold',
     fontSize: 16,
     fontWeight: '600',
     color: '#0A0A0A',
@@ -372,7 +384,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   emptyAddBtnText: {
-    fontFamily: 'Geist_600SemiBold',
+    fontFamily: 'Onest_600SemiBold',
     fontSize: 13,
     fontWeight: '600',
     color: '#FFFFFF',

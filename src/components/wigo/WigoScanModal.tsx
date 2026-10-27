@@ -253,7 +253,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   title: {
-    fontFamily: 'Geist_600SemiBold',
+    fontFamily: 'Onest_600SemiBold',
     fontSize: 16,
     fontWeight: '600',
     color: WIGO_COLORS.textDark,
@@ -275,25 +275,27 @@ const styles = StyleSheet.create({
   modeRow: {
     flexDirection: 'row',
     backgroundColor: WIGO_COLORS.thumbnailBackground,
-    borderRadius: 12,
+    borderRadius: 99,
     padding: 3,
   },
   modeTab: {
     flex: 1,
     paddingVertical: 10,
     alignItems: 'center',
-    borderRadius: 10,
+    borderRadius: 99,
   },
   modeTabActive: {
     backgroundColor: WIGO_COLORS.cardBackground,
+    borderColor: WIGO_COLORS.borderSubtle,
+    borderWidth: 0.5,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    shadowRadius: 99,
+    // elevation: 2,
   },
   modeText: {
-    fontFamily: 'Geist_500Medium',
+    fontFamily: 'Onest_500Medium',
     fontSize: 12,
     color: WIGO_COLORS.textSubdued,
   },
@@ -342,7 +344,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   permissionBtnText: {
-    fontFamily: 'Geist_500Medium',
+    fontFamily: 'Onest_500Medium',
     fontSize: 11,
     color: '#FFFFFF',
   },
@@ -359,7 +361,7 @@ const styles = StyleSheet.create({
     zIndex: 5,
   },
   processingText: {
-    fontFamily: 'Geist_500Medium',
+    fontFamily: 'Onest_500Medium',
     fontSize: 11,
     color: '#FFFFFF',
   },
@@ -381,7 +383,7 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   scannedText: {
-    fontFamily: 'Geist_600SemiBold',
+    fontFamily: 'Onest_600SemiBold',
     fontSize: 11,
     color: WIGO_COLORS.textDark,
   },
@@ -397,7 +399,7 @@ const styles = StyleSheet.create({
     borderRadius: 9999,
   },
   triggerBtnText: {
-    fontFamily: 'Geist_500Medium',
+    fontFamily: 'Onest_500Medium',
     fontSize: 14,
     fontWeight: '500',
     color: WIGO_COLORS.textWhite,

@@ -3,7 +3,6 @@ import { StatusBar } from 'expo-status-bar';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useFonts, Onest_400Regular, Onest_500Medium, Onest_600SemiBold, Onest_700Bold } from '@expo-google-fonts/onest';
-import { Geist_400Regular, Geist_500Medium, Geist_600SemiBold, Geist_700Bold } from '@expo-google-fonts/geist';
 import { View, StyleSheet, Platform } from 'react-native';
 
 SplashScreen.preventAutoHideAsync();
@@ -14,10 +13,6 @@ export default function RootLayout() {
     Onest_500Medium,
     Onest_600SemiBold,
     Onest_700Bold,
-    Geist_400Regular,
-    Geist_500Medium,
-    Geist_600SemiBold,
-    Geist_700Bold,
   });
 
   useEffect(() => {
