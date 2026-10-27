@@ -44,6 +44,15 @@
         {
           "cameraPermission": "Allow Wigo to access your camera to scan equipment QR codes and receipts."
         }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "enableProguardInReleaseBuilds": true,
+            "enableShrinkResourcesInReleaseBuilds": true
+          }
+        }
       ]
     ],
     "experiments": {

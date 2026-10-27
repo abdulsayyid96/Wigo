@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback, useRef, useEffect, useState } from 'react';
 import {
   StyleSheet,
   Text,
@@ -9,17 +9,210 @@ import {
   TouchableWithoutFeedback,
   Alert,
 } from 'react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  Easing,
+  useReducedMotion,
+} from 'react-native-reanimated';
+import { scheduleOnRN } from 'react-native-worklets';
 import * as ImagePicker from 'expo-image-picker';
-import { Camera, Image as ImageIcon, X } from 'lucide-react-native';
+import { Camera, Image as ImageIcon } from 'lucide-react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { capImageResolution } from '@/utils/image-manipulator';
+import { WIGO_COLORS } from '@/constants/wigo-theme';
 
-interface WigoImageSourceModalProps {
+// ============================================================================
+// 1. CONSTANTS & TYPES
+// ============================================================================
+
+const EASE_SHEET = Easing.bezier(0.32, 0.72, 0, 1);
+const EASE_SHEET_OUT = Easing.bezier(0.72, 0.32, 0, 1);
+const ENTER_DURATION = 500;
+const EXIT_DURATION = 550;
+const ESTIMATED_SHEET_HEIGHT = 450;
+
+export interface WigoImageSourceModalProps {
   visible: boolean;
   onClose: () => void;
   title: string;
   subtitle?: string;
   onImageSelected: (result: { uri: string; base64?: string }) => void;
 }
+
+// ============================================================================
+// 2. ANIMATION HOOK
+// ============================================================================
+
+function useSheetSlideAnimation(visible: boolean, onClose: () => void) {
+  const [isRendered, setIsRendered] = useState(visible);
+  const reducedMotion = useReducedMotion();
+  const translateY = useSharedValue(visible ? 0 : ESTIMATED_SHEET_HEIGHT);
+  const isClosingRef = useRef(false);
+  const isClosedRef = useRef(false);
+  const prevVisibleRef = useRef(visible);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+
+  const finishClose = useCallback(() => {
+    if (isClosedRef.current) return;
+    isClosedRef.current = true;
+    setIsRendered(false);
+    isClosingRef.current = false;
+    onCloseRef.current();
+  }, []);
+
+  const closeImmediately = useCallback(() => {
+    isClosedRef.current = true;
+    setIsRendered(false);
+    isClosingRef.current = false;
+    onCloseRef.current();
+  }, []);
+
+  const animateClose = useCallback(() => {
+    if (isClosingRef.current) return;
+    isClosingRef.current = true;
+    isClosedRef.current = false;
+
+    if (reducedMotion) {
+      finishClose();
+      return;
+    }
+
+    translateY.set(
+      withTiming(
+        ESTIMATED_SHEET_HEIGHT,
+        { duration: EXIT_DURATION, easing: EASE_SHEET_OUT },
+        (finished) => {
+          'worklet';
+          if (finished) {
+            scheduleOnRN(finishClose);
+          }
+        }
+      )
+    );
+
+    // Safety fallback timer for web / interrupted animation frame
+    setTimeout(() => {
+      finishClose();
+    }, EXIT_DURATION + 60);
+  }, [finishClose, reducedMotion, translateY]);
+
+  useEffect(() => {
+    const wasVisible = prevVisibleRef.current;
+    prevVisibleRef.current = visible;
+
+    if (visible && !wasVisible) {
+      isClosingRef.current = false;
+      isClosedRef.current = false;
+      setIsRendered(true);
+      if (reducedMotion) {
+        translateY.set(0);
+      } else {
+        translateY.set(ESTIMATED_SHEET_HEIGHT);
+        translateY.set(
+          withTiming(0, { duration: ENTER_DURATION, easing: EASE_SHEET })
+        );
+      }
+    } else if (!visible && wasVisible) {
+      if (isRendered && !isClosingRef.current) {
+        animateClose();
+      }
+    }
+  }, [visible, animateClose, isRendered, reducedMotion, translateY]);
+
+  const sheetAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: translateY.get() }],
+  }));
+
+  return {
+    isRendered,
+    sheetAnimatedStyle,
+    animateClose,
+    closeImmediately,
+  };
+}
+
+// ============================================================================
+// 3. SUB-COMPONENTS
+// ============================================================================
+
+interface ModalHeaderProps {
+  title: string;
+  subtitle?: string;
+}
+
+function ModalHeader({ title, subtitle }: ModalHeaderProps) {
+  return (
+    <View style={styles.header}>
+      <View style={styles.headerTitleCol}>
+        <Text style={styles.title}>{title}</Text>
+        {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
+      </View>
+    </View>
+  );
+}
+
+interface ActionButtonsProps {
+  onCamera: () => void;
+  onGallery: () => void;
+}
+
+function ActionButtons({ onCamera, onGallery }: ActionButtonsProps) {
+  return (
+    <View style={styles.actionCol}>
+      <TouchableOpacity
+        activeOpacity={0.8}
+        onPress={onCamera}
+        style={styles.actionBtn}
+      >
+        <View style={styles.actionIconBox}>
+          <Camera size={24} color={WIGO_COLORS.textPlaceholder} strokeWidth={2} />
+          <Text style={styles.actionTitle}>Take a picture</Text>
+        </View>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        activeOpacity={0.8}
+        onPress={onGallery}
+        style={styles.actionBtn}
+      >
+        <View style={styles.actionIconBox}>
+          <ImageIcon size={24} color={WIGO_COLORS.textPlaceholder} strokeWidth={2} />
+          <Text style={styles.actionTitle}>Choose from gallery</Text>
+        </View>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+interface CancelButtonProps {
+  onCancel: () => void;
+}
+
+function CancelButton({ onCancel }: CancelButtonProps) {
+  return (
+    <TouchableOpacity
+      activeOpacity={0.8}
+      onPress={onCancel}
+      style={styles.cancelWrapper}
+    >
+      <LinearGradient
+        colors={[WIGO_COLORS.orangeGradientStart, WIGO_COLORS.orangeGradientEnd]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.cancelGradient}
+      >
+        <Text style={styles.cancelText}>Cancel</Text>
+      </LinearGradient>
+    </TouchableOpacity>
+  );
+}
+
+// ============================================================================
+// 4. MAIN COMPONENT
+// ============================================================================
 
 export function WigoImageSourceModal({
   visible,
@@ -28,7 +221,10 @@ export function WigoImageSourceModal({
   subtitle,
   onImageSelected,
 }: WigoImageSourceModalProps) {
-  if (!visible) return null;
+  const { isRendered, sheetAnimatedStyle, animateClose, closeImmediately } = useSheetSlideAnimation(
+    visible,
+    onClose
+  );
 
   const handleLaunchCamera = async () => {
     try {
@@ -43,7 +239,7 @@ export function WigoImageSourceModal({
         }
       }
 
-      onClose();
+      closeImmediately();
 
       const result = await ImagePicker.launchCameraAsync({
         mediaTypes: ['images'],
@@ -54,7 +250,6 @@ export function WigoImageSourceModal({
 
       if (!result.canceled && result.assets && result.assets.length > 0) {
         const asset = result.assets[0];
-        // Automatically resize and cap image resolution to max width: 1200
         const processed = await capImageResolution(asset.uri, {
           maxWidth: 1200,
           compress: 0.85,
@@ -85,7 +280,7 @@ export function WigoImageSourceModal({
         }
       }
 
-      onClose();
+      closeImmediately();
 
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images'],
@@ -96,7 +291,6 @@ export function WigoImageSourceModal({
 
       if (!result.canceled && result.assets && result.assets.length > 0) {
         const asset = result.assets[0];
-        // Automatically resize and cap image resolution to max width: 1200
         const processed = await capImageResolution(asset.uri, {
           maxWidth: 1200,
           compress: 0.85,
@@ -114,78 +308,34 @@ export function WigoImageSourceModal({
     }
   };
 
+  if (!isRendered) return null;
+
   return (
     <Modal
-      visible={visible}
+      visible={isRendered}
       transparent
-      animationType="slide"
-      onRequestClose={onClose}
+      animationType="none"
+      onRequestClose={animateClose}
     >
-      <TouchableWithoutFeedback onPress={onClose}>
+      <TouchableWithoutFeedback onPress={animateClose}>
         <View style={styles.overlay}>
           <TouchableWithoutFeedback onPress={(e) => e.stopPropagation()}>
-            <View style={styles.sheetContainer}>
+            <Animated.View style={[styles.sheetContainer, sheetAnimatedStyle]}>
               {/* Drag indicator */}
               <View style={styles.dragPill} />
 
-              {/* Header */}
-              <View style={styles.header}>
-                <View style={styles.headerTitleCol}>
-                  <Text style={styles.title}>{title}</Text>
-                  {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
-                </View>
-                <TouchableOpacity
-                  activeOpacity={0.7}
-                  onPress={onClose}
-                  style={styles.closeBtn}
-                  accessibilityLabel="Close image source modal"
-                >
-                  <X size={16} color="#9DA1A8" strokeWidth={2.2} />
-                </TouchableOpacity>
-              </View>
+              {/* Title & subtitle */}
+              <ModalHeader title={title} subtitle={subtitle} />
 
-              {/* Action Buttons */}
-              <View style={styles.actionCol}>
-                {/* Take Photo Button */}
-                <TouchableOpacity
-                  activeOpacity={0.8}
-                  onPress={handleLaunchCamera}
-                  style={styles.actionBtn}
-                >
-                  <View style={styles.actionIconBox}>
-                    <Camera size={18} color="#ff5e00" strokeWidth={2.2} />
-                  </View>
-                  <View style={styles.actionTextCol}>
-                    <Text style={styles.actionTitle}>Take Photo</Text>
-                    <Text style={styles.actionSub}>Use device camera to snap picture</Text>
-                  </View>
-                </TouchableOpacity>
-
-                {/* Choose from Library Button */}
-                <TouchableOpacity
-                  activeOpacity={0.8}
-                  onPress={handleLaunchGallery}
-                  style={styles.actionBtn}
-                >
-                  <View style={styles.actionIconBox}>
-                    <ImageIcon size={18} color="#ff5e00" strokeWidth={2.2} />
-                  </View>
-                  <View style={styles.actionTextCol}>
-                    <Text style={styles.actionTitle}>Choose from Photo Library</Text>
-                    <Text style={styles.actionSub}>Select existing picture or saved receipt</Text>
-                  </View>
-                </TouchableOpacity>
-              </View>
+              {/* Camera & Gallery Action Cards */}
+              <ActionButtons
+                onCamera={handleLaunchCamera}
+                onGallery={handleLaunchGallery}
+              />
 
               {/* Cancel Button */}
-              <TouchableOpacity
-                activeOpacity={0.8}
-                onPress={onClose}
-                style={styles.cancelBtn}
-              >
-                <Text style={styles.cancelBtnText}>Cancel</Text>
-              </TouchableOpacity>
-            </View>
+              <CancelButton onCancel={animateClose} />
+            </Animated.View>
           </TouchableWithoutFeedback>
         </View>
       </TouchableWithoutFeedback>
@@ -193,39 +343,43 @@ export function WigoImageSourceModal({
   );
 }
 
+// ============================================================================
+// 5. STYLES
+// ============================================================================
+
 const styles = StyleSheet.create({
+  // Modal & Sheet Container
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.72)',
     justifyContent: 'flex-end',
   },
   sheetContainer: {
-    backgroundColor: '#141518',
-    borderTopLeftRadius: 26,
-    borderTopRightRadius: 26,
-    borderWidth: 1,
-    borderColor: '#26282E',
+    backgroundColor: WIGO_COLORS.cardBackground,
+    borderTopLeftRadius: 44,
+    borderTopRightRadius: 44,
+    borderWidth: 0.5,
+    borderColor: WIGO_COLORS.borderSubtle,
     borderBottomWidth: 0,
-    paddingHorizontal: 20,
-    paddingBottom: Platform.OS === 'ios' ? 38 : 24,
+    paddingHorizontal: 24,
+    paddingBottom: Platform.OS === 'ios' ? 34 : 20,
     gap: 16,
   },
   dragPill: {
     width: 36,
     height: 4,
     borderRadius: 2,
-    backgroundColor: '#353840',
+    backgroundColor: WIGO_COLORS.dividerSubtle,
     alignSelf: 'center',
     marginTop: 10,
+    marginBottom: 6,
   },
+
+  // Header
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingVertical: 4,
-    borderBottomWidth: 1,
-    borderBottomColor: '#202227',
-    paddingBottom: 12,
   },
   headerTitleCol: {
     flexDirection: 'column',
@@ -234,70 +388,82 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#FFFFFF',
-    fontFamily: Platform.OS === 'web' ? 'Onest, sans-serif' : undefined,
+    color: WIGO_COLORS.textDark,
+    fontFamily: Platform.OS === 'web' ? 'Onest, sans-serif' : 'Onest_700Bold',
   },
   subtitle: {
     fontSize: 12,
-    color: '#8A8F98',
+    color: WIGO_COLORS.textSubdued,
+    fontFamily: Platform.OS === 'web' ? 'Onest, sans-serif' : 'Onest_400Regular',
   },
-  closeBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#1E2025',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+
+  // Actions
   actionCol: {
-    gap: 10,
+    width: '100%',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12,
   },
   actionBtn: {
-    flexDirection: 'row',
+    flex: 1,
+    flexDirection: 'column',
     alignItems: 'center',
-    gap: 14,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
     borderRadius: 14,
-    backgroundColor: '#1B1C21',
-    borderWidth: 1,
-    borderColor: '#292B32',
   },
   actionIconBox: {
-    width: 38,
-    height: 38,
+    width: '100%',
+    height: 96,
     borderRadius: 10,
-    backgroundColor: 'rgba(255, 94, 0, 0.12)',
+    gap: 10,
+    backgroundColor: WIGO_COLORS.background,
+    borderWidth: 0.5,
+    borderColor: WIGO_COLORS.borderSubtle,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  actionTextCol: {
-    flex: 1,
-    flexDirection: 'column',
-    gap: 2,
-  },
   actionTitle: {
+    fontSize: 12,
+    fontWeight: '400',
+    color: WIGO_COLORS.textDark,
+    fontFamily: Platform.OS === 'web' ? 'Onest, sans-serif' : 'Onest_400Regular',
+  },
+
+  // Cancel Button
+  cancelWrapper: {
+    width: '100%',
+    borderRadius: 9999,
+    overflow: 'hidden',
+  },
+  cancelGradient: {
+    height: 48,
+    width: '100%',
+    borderRadius: 9999,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    borderWidth: 0.5,
+    borderColor: '#FFA066',
+    ...Platform.select({
+      web: {
+        boxShadow: 'inset 0 1.5px 0 rgba(255, 255, 255, 0.5), inset 0 -2.5px 3px rgba(0, 0, 0, 0.2)',
+      },
+      ios: {
+        shadowColor: '#ED5000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.35,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 3,
+      },
+    }),
+  },
+  cancelText: {
+    fontFamily: 'Onest_600SemiBold',
     fontSize: 14,
     fontWeight: '600',
     color: '#FFFFFF',
-    fontFamily: Platform.OS === 'web' ? 'Onest, sans-serif' : undefined,
-  },
-  actionSub: {
-    fontSize: 11,
-    color: '#7D8187',
-  },
-  cancelBtn: {
-    width: '100%',
-    height: 44,
-    borderRadius: 12,
-    backgroundColor: '#1F2127',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 4,
-  },
-  cancelBtnText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#A0A4AE',
+    lineHeight: 18,
   },
 });

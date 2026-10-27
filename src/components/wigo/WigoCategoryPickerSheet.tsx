@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import {
   StyleSheet,
   Text,
@@ -10,8 +10,22 @@ import {
   KeyboardAvoidingView,
   Platform,
   TouchableWithoutFeedback,
+  Keyboard,
 } from 'react-native';
-import { X, Check, Plus, Tag } from 'lucide-react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  Easing,
+  useReducedMotion,
+} from 'react-native-reanimated';
+import { scheduleOnRN } from 'react-native-worklets';
+import { Check, CirclePlusIcon } from 'lucide-react-native';
+import { WIGO_COLORS } from '@/constants/wigo-theme';
+
+// ============================================================================
+// 1. CONSTANTS & TYPES
+// ============================================================================
 
 export const DEFAULT_WIGO_CATEGORIES = [
   'Power Tools',
@@ -25,7 +39,14 @@ export const DEFAULT_WIGO_CATEGORIES = [
   'Pumps & Plumbing',
 ];
 
-interface WigoCategoryPickerSheetProps {
+// Animation timing & curves matching WigoDatePickerSheet
+const EASE_SHEET = Easing.bezier(0.32, 0.72, 0, 1);
+const EASE_SHEET_OUT = Easing.bezier(0.72, 0.32, 0, 1);
+const ENTER_DURATION = 500;
+const EXIT_DURATION = 550;
+const ESTIMATED_SHEET_HEIGHT = 500;
+
+export interface WigoCategoryPickerSheetProps {
   visible: boolean;
   onClose: () => void;
   selectedCategory: string;
@@ -33,6 +54,185 @@ interface WigoCategoryPickerSheetProps {
   customCategories?: string[];
   onAddCustomCategory?: (category: string) => void;
 }
+
+// ============================================================================
+// 2. ANIMATION HOOK
+// ============================================================================
+
+function useSheetSlideAnimation(visible: boolean, onClose: () => void) {
+  const [isRendered, setIsRendered] = useState(visible);
+  const reducedMotion = useReducedMotion();
+  const translateY = useSharedValue(visible ? 0 : ESTIMATED_SHEET_HEIGHT);
+  const isClosingRef = useRef(false);
+  const isClosedRef = useRef(false);
+  const prevVisibleRef = useRef(visible);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+
+  const finishClose = useCallback(() => {
+    if (isClosedRef.current) return;
+    isClosedRef.current = true;
+    setIsRendered(false);
+    isClosingRef.current = false;
+    onCloseRef.current();
+  }, []);
+
+  const animateClose = useCallback(() => {
+    Keyboard.dismiss();
+    if (isClosingRef.current) return;
+    isClosingRef.current = true;
+    isClosedRef.current = false;
+
+    if (reducedMotion) {
+      finishClose();
+      return;
+    }
+
+    translateY.set(
+      withTiming(
+        ESTIMATED_SHEET_HEIGHT,
+        { duration: EXIT_DURATION, easing: EASE_SHEET_OUT },
+        (finished) => {
+          'worklet';
+          if (finished) {
+            scheduleOnRN(finishClose);
+          }
+        }
+      )
+    );
+
+    // Safety fallback timer for web / interrupted animation frame
+    setTimeout(() => {
+      finishClose();
+    }, EXIT_DURATION + 60);
+  }, [finishClose, reducedMotion, translateY]);
+
+  useEffect(() => {
+    const wasVisible = prevVisibleRef.current;
+    prevVisibleRef.current = visible;
+
+    if (visible && !wasVisible) {
+      isClosingRef.current = false;
+      isClosedRef.current = false;
+      setIsRendered(true);
+      if (reducedMotion) {
+        translateY.set(0);
+      } else {
+        translateY.set(ESTIMATED_SHEET_HEIGHT);
+        translateY.set(
+          withTiming(0, { duration: ENTER_DURATION, easing: EASE_SHEET })
+        );
+      }
+    } else if (!visible && wasVisible) {
+      if (isRendered && !isClosingRef.current) {
+        animateClose();
+      }
+    }
+  }, [visible, animateClose, isRendered, reducedMotion, translateY]);
+
+  const sheetAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: translateY.get() }],
+  }));
+
+  return {
+    isRendered,
+    sheetAnimatedStyle,
+    animateClose,
+  };
+}
+
+// ============================================================================
+// 3. SUB-COMPONENTS
+// ============================================================================
+
+interface CategoryHeaderProps {
+  onAdd: () => void;
+  canAdd: boolean;
+}
+
+function CategoryHeader({ onAdd, canAdd }: CategoryHeaderProps) {
+  return (
+    <View style={styles.header}>
+      <Text style={styles.title}>Select Category</Text>
+      <TouchableOpacity
+        activeOpacity={0.8}
+        onPress={onAdd}
+        disabled={!canAdd}
+        style={[styles.addBtn, !canAdd && styles.addBtnDisabled]}
+      >
+        <CirclePlusIcon
+          size={14}
+          color={canAdd ? WIGO_COLORS.orangeGradientStart : WIGO_COLORS.textSubdued}
+          strokeWidth={2.4}
+        />
+        <Text style={[styles.addBtnText, !canAdd && styles.addBtnTextDisabled]}>
+          New Category
+        </Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+interface CategoryListProps {
+  categories: string[];
+  selectedCategory: string;
+  onSelectCategory: (category: string) => void;
+  newCatInput: string;
+  onChangeInput: (text: string) => void;
+  onAdd: () => void;
+}
+
+function CategoryList({
+  categories,
+  selectedCategory,
+  onSelectCategory,
+  newCatInput,
+  onChangeInput,
+  onAdd,
+}: CategoryListProps) {
+  return (
+    <ScrollView
+      style={styles.list}
+      showsVerticalScrollIndicator={false}
+      keyboardShouldPersistTaps="handled"
+    >
+      <TextInput
+        value={newCatInput}
+        onChangeText={onChangeInput}
+        placeholder="e.g. Drones & Aerial"
+        placeholderTextColor={WIGO_COLORS.textPlaceholder}
+        style={styles.addInput}
+        onSubmitEditing={onAdd}
+        returnKeyType="done"
+      />
+
+      {categories.map((cat) => {
+        const isSelected = cat.toLowerCase() === selectedCategory.toLowerCase();
+        return (
+          <TouchableOpacity
+            key={cat}
+            activeOpacity={0.7}
+            onPress={() => onSelectCategory(cat)}
+            style={[styles.catRow, isSelected && styles.catRowSelected]}
+          >
+            <Text style={[styles.catName, isSelected && styles.catNameSelected]}>
+              {cat}
+            </Text>
+            {isSelected && (
+              <View style={styles.checkBadge}>
+                <Check size={14} color="#FFFFFF" strokeWidth={2.6} />
+              </View>
+            )}
+          </TouchableOpacity>
+        );
+      })}
+    </ScrollView>
+  );
+}
+
+// ============================================================================
+// 4. MAIN COMPONENT
+// ============================================================================
 
 export function WigoCategoryPickerSheet({
   visible,
@@ -43,6 +243,11 @@ export function WigoCategoryPickerSheet({
   onAddCustomCategory,
 }: WigoCategoryPickerSheetProps) {
   const [newCatInput, setNewCatInput] = useState('');
+
+  const { isRendered, sheetAnimatedStyle, animateClose } = useSheetSlideAnimation(
+    visible,
+    onClose
+  );
 
   // Combine default with custom, avoiding duplicates
   const allCategories = Array.from(
@@ -57,123 +262,50 @@ export function WigoCategoryPickerSheet({
     }
     onSelectCategory(trimmed);
     setNewCatInput('');
-    onClose();
+    // Stays open per user preference; backdrop tap dismisses
   };
+
+  const handleSelect = (category: string) => {
+    onSelectCategory(category);
+    // Stays open per user preference; backdrop tap dismisses
+  };
+
+  if (!isRendered) return null;
 
   return (
     <Modal
-      visible={visible}
+      visible={isRendered}
       transparent
-      animationType="fade"
-      onRequestClose={onClose}
+      animationType="none"
+      onRequestClose={animateClose}
     >
-      <TouchableWithoutFeedback onPress={onClose}>
+      <TouchableWithoutFeedback onPress={animateClose}>
         <View style={styles.overlay}>
           <TouchableWithoutFeedback onPress={(e) => e.stopPropagation()}>
-            <KeyboardAvoidingView
-              behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-              style={styles.sheetContainer}
-            >
-              {/* Drag Indicator */}
-              <View style={styles.dragPill} />
-
-              {/* Header */}
-              <View style={styles.header}>
-                <View style={styles.headerLeft}>
-                  <View style={styles.iconCircle}>
-                    <Tag size={16} color="#ff5e00" strokeWidth={2.4} />
-                  </View>
-                  <View>
-                    <Text style={styles.title}>Select Category</Text>
-                    <Text style={styles.subtitle}>Choose equipment classification</Text>
-                  </View>
-                </View>
-                <TouchableOpacity
-                  activeOpacity={0.7}
-                  onPress={onClose}
-                  style={styles.closeBtn}
-                  accessibilityLabel="Close category picker"
-                >
-                  <X size={16} color="#9DA1A8" strokeWidth={2.2} />
-                </TouchableOpacity>
-              </View>
-
-              {/* Category List */}
-              <ScrollView
-                style={styles.list}
-                showsVerticalScrollIndicator={false}
-                keyboardShouldPersistTaps="handled"
+            <Animated.View style={[styles.sheetContainer, sheetAnimatedStyle]}>
+              <KeyboardAvoidingView
+                behavior={Platform.OS === 'ios' ? 'padding' : undefined}
               >
-                {allCategories.map((cat) => {
-                  const isSelected =
-                    cat.toLowerCase() === selectedCategory.toLowerCase();
-                  return (
-                    <TouchableOpacity
-                      key={cat}
-                      activeOpacity={0.7}
-                      onPress={() => {
-                        onSelectCategory(cat);
-                        onClose();
-                      }}
-                      style={[
-                        styles.catRow,
-                        isSelected && styles.catRowSelected,
-                      ]}
-                    >
-                      <View style={styles.catLeft}>
-                        <View
-                          style={[
-                            styles.dot,
-                            isSelected && { backgroundColor: '#ff5e00' },
-                          ]}
-                        />
-                        <Text
-                          style={[
-                            styles.catName,
-                            isSelected && styles.catNameSelected,
-                          ]}
-                        >
-                          {cat}
-                        </Text>
-                      </View>
-                      {isSelected && (
-                        <View style={styles.checkBadge}>
-                          <Check size={14} color="#FFFFFF" strokeWidth={2.6} />
-                        </View>
-                      )}
-                    </TouchableOpacity>
-                  );
-                })}
-              </ScrollView>
+                {/* Drag Indicator Pill */}
+                <View style={styles.dragPill} />
 
-              {/* Add Custom Category Footer */}
-              <View style={styles.footer}>
-                <Text style={styles.footerLabel}>Or create new category:</Text>
-                <View style={styles.addInputRow}>
-                  <TextInput
-                    value={newCatInput}
-                    onChangeText={setNewCatInput}
-                    placeholder="e.g. Drones & Aerial"
-                    placeholderTextColor="#686D76"
-                    style={styles.addInput}
-                    onSubmitEditing={handleAdd}
-                    returnKeyType="done"
-                  />
-                  <TouchableOpacity
-                    activeOpacity={0.8}
-                    onPress={handleAdd}
-                    disabled={!newCatInput.trim()}
-                    style={[
-                      styles.addBtn,
-                      !newCatInput.trim() && styles.addBtnDisabled,
-                    ]}
-                  >
-                    <Plus size={16} color="#FFFFFF" strokeWidth={2.4} />
-                    <Text style={styles.addBtnText}>Add</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            </KeyboardAvoidingView>
+                {/* Header with Title and New Category Action */}
+                <CategoryHeader
+                  onAdd={handleAdd}
+                  canAdd={Boolean(newCatInput.trim())}
+                />
+
+                {/* Category Input & List */}
+                <CategoryList
+                  categories={allCategories}
+                  selectedCategory={selectedCategory}
+                  onSelectCategory={handleSelect}
+                  newCatInput={newCatInput}
+                  onChangeInput={setNewCatInput}
+                  onAdd={handleAdd}
+                />
+              </KeyboardAvoidingView>
+            </Animated.View>
           </TouchableWithoutFeedback>
         </View>
       </TouchableWithoutFeedback>
@@ -181,18 +313,22 @@ export function WigoCategoryPickerSheet({
   );
 }
 
+// ============================================================================
+// 5. STYLES
+// ============================================================================
+
 const styles = StyleSheet.create({
+  // Modal & Sheet Container
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.72)',
     justifyContent: 'flex-end',
   },
   sheetContainer: {
-    backgroundColor: '#141518',
-    borderTopLeftRadius: 26,
-    borderTopRightRadius: 26,
-    borderWidth: 1,
-    borderColor: '#26282E',
+    backgroundColor: WIGO_COLORS.cardBackground,
+    borderTopLeftRadius: 44,
+    borderTopRightRadius: 44,
+    borderWidth: 0.5,
+    borderColor: WIGO_COLORS.borderSubtle,
     borderBottomWidth: 0,
     maxHeight: '80%',
     paddingBottom: Platform.OS === 'ios' ? 34 : 20,
@@ -201,58 +337,65 @@ const styles = StyleSheet.create({
     width: 36,
     height: 4,
     borderRadius: 2,
-    backgroundColor: '#353840',
+    backgroundColor: WIGO_COLORS.dividerSubtle,
     alignSelf: 'center',
     marginTop: 10,
     marginBottom: 6,
   },
+
+  // Header
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: '#202227',
-  },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  iconCircle: {
-    width: 34,
-    height: 34,
-    borderRadius: 10,
-    backgroundColor: 'rgba(255, 94, 0, 0.12)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 94, 0, 0.25)',
+    paddingHorizontal: 24,
+    paddingVertical: 10,
   },
   title: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    fontFamily: Platform.OS === 'web' ? 'Onest, sans-serif' : undefined,
+    fontFamily: Platform.OS === 'web' ? 'Onest, sans-serif' : 'Onest_700Bold',
+    fontSize: 15,
+    fontWeight: '600',
+    color: WIGO_COLORS.textDark,
   },
-  subtitle: {
-    fontSize: 12,
-    color: '#8A8F98',
-    marginTop: 1,
-    fontFamily: Platform.OS === 'web' ? 'Onest, sans-serif' : undefined,
-  },
-  closeBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#1E2025',
+  addBtn: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    gap: 4,
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+    borderRadius: 8,
   },
+  addBtnDisabled: {
+    opacity: 0.5,
+  },
+  addBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: WIGO_COLORS.orangeGradientStart,
+    fontFamily: Platform.OS === 'web' ? 'Onest, sans-serif' : 'Onest_500Medium',
+  },
+  addBtnTextDisabled: {
+    color: WIGO_COLORS.textSubdued,
+  },
+
+  // Search/Create Input
+  addInput: {
+    borderRadius: 12,
+    backgroundColor: WIGO_COLORS.background,
+    borderWidth: 0.5,
+    borderColor: WIGO_COLORS.borderSubtle,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    marginBottom: 12,
+    color: WIGO_COLORS.textDark,
+    fontSize: 14,
+    fontFamily: Platform.OS === 'web' ? 'Onest, sans-serif' : 'Onest_500Medium',
+  },
+
+  // Category List & Rows
   list: {
     maxHeight: 280,
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     paddingVertical: 10,
   },
   catRow: {
@@ -267,29 +410,20 @@ const styles = StyleSheet.create({
   },
   catRowSelected: {
     backgroundColor: 'rgba(255, 94, 0, 0.1)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 94, 0, 0.3)',
-  },
-  catLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  dot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#3E424B',
+    borderWidth: 0.5,
+    borderColor: WIGO_COLORS.orangeOutline,
   },
   catName: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '500',
-    color: '#D0D4DC',
-    fontFamily: Platform.OS === 'web' ? 'Onest, sans-serif' : undefined,
+    color: WIGO_COLORS.textDark,
+    fontFamily: Platform.OS === 'web' ? 'Onest, sans-serif' : 'Onest_500Medium',
   },
   catNameSelected: {
-    color: '#FFFFFF',
-    fontWeight: '600',
+    fontSize: 14,
+    color: WIGO_COLORS.textDark,
+    fontWeight: '900',
+    fontFamily: Platform.OS === 'web' ? 'Onest, sans-serif' : 'Onest_500Medium',
   },
   checkBadge: {
     width: 22,
@@ -298,53 +432,5 @@ const styles = StyleSheet.create({
     backgroundColor: '#ff5e00',
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  footer: {
-    paddingHorizontal: 20,
-    paddingTop: 14,
-    borderTopWidth: 1,
-    borderTopColor: '#202227',
-  },
-  footerLabel: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: '#8A8F98',
-    marginBottom: 8,
-  },
-  addInputRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  addInput: {
-    flex: 1,
-    height: 42,
-    borderRadius: 10,
-    backgroundColor: '#1B1C21',
-    borderWidth: 1,
-    borderColor: '#2C2E36',
-    paddingHorizontal: 14,
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontFamily: Platform.OS === 'web' ? 'Onest, sans-serif' : undefined,
-  },
-  addBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    height: 42,
-    paddingHorizontal: 16,
-    borderRadius: 10,
-    backgroundColor: '#ff5e00',
-    justifyContent: 'center',
-  },
-  addBtnDisabled: {
-    backgroundColor: '#353840',
-    opacity: 0.6,
-  },
-  addBtnText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#FFFFFF',
   },
 });

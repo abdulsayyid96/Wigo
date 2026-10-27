@@ -14,11 +14,14 @@ import Animated, {
   withTiming,
   Easing,
   useReducedMotion,
-  SharedValue,
 } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
-import { X, ChevronLeft, ChevronRight, Calendar as CalendarIcon, Check } from 'lucide-react-native';
+import { ChevronLeft, ChevronRight, Check } from 'lucide-react-native';
 import { WIGO_COLORS } from '@/constants/wigo-theme';
+
+// ============================================================================
+// 1. CONSTANTS & TYPES
+// ============================================================================
 
 const MONTH_NAMES = [
   'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
@@ -32,228 +35,59 @@ const FULL_MONTH_NAMES = [
 
 const WEEKDAY_NAMES = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 
-// iOS sheet curve and durations per animate-expo skill
+// Slide animations config
 const EASE_SHEET = Easing.bezier(0.32, 0.72, 0, 1);
 const EASE_SHEET_OUT = Easing.bezier(0.72, 0.32, 0, 1);
 const ENTER_DURATION = 500;
 const EXIT_DURATION = 550;
 const ESTIMATED_SHEET_HEIGHT = 500;
 
-interface WigoDatePickerSheetProps {
+export interface WigoDatePickerSheetProps {
   visible: boolean;
   onClose: () => void;
   currentDateText?: string;
   onSelectDate: (formattedDate: string) => void;
 }
 
-interface WigoDatePickerSheetContentProps extends Omit<WigoDatePickerSheetProps, 'visible'> {
-  translateY: SharedValue<number>;
-  onRequestClose: () => void;
+interface SelectedDate {
+  year: number;
+  month: number;
+  day: number;
 }
 
-function WigoDatePickerSheetContent({
-  currentDateText,
-  onSelectDate,
-  translateY,
-  onRequestClose,
-}: WigoDatePickerSheetContentProps) {
-  // Parse initial date from currentDateText (e.g. "18 Oct 2026" or current date)
-  const initialDate = useMemo(() => {
-    if (currentDateText) {
-      const parts = currentDateText.trim().split(/\s+/);
-      if (parts.length === 3) {
-        const day = parseInt(parts[0], 10);
-        const monthIndex = MONTH_NAMES.findIndex(
-          (m) => m.toLowerCase() === parts[1].toLowerCase().slice(0, 3)
-        );
-        const year = parseInt(parts[2], 10);
-        if (!isNaN(day) && monthIndex !== -1 && !isNaN(year)) {
-          return new Date(year, monthIndex, day);
-        }
+// ============================================================================
+// 2. DATE UTILITIES
+// ============================================================================
+
+function parseInitialDate(currentDateText?: string): Date {
+  if (currentDateText) {
+    const parts = currentDateText.trim().split(/\s+/);
+    if (parts.length === 3) {
+      const day = parseInt(parts[0], 10);
+      const monthIndex = MONTH_NAMES.findIndex(
+        (m) => m.toLowerCase() === parts[1].toLowerCase().slice(0, 3)
+      );
+      const year = parseInt(parts[2], 10);
+      if (!isNaN(day) && monthIndex !== -1 && !isNaN(year)) {
+        return new Date(year, monthIndex, day);
       }
-      const parsed = new Date(currentDateText);
-      if (!isNaN(parsed.getTime())) return parsed;
     }
-    return new Date();
-  }, [currentDateText]);
-
-  const [activeYear, setActiveYear] = useState(initialDate.getFullYear());
-  const [activeMonth, setActiveMonth] = useState(initialDate.getMonth());
-  const [selectedDate, setSelectedDate] = useState({
-    year: initialDate.getFullYear(),
-    month: initialDate.getMonth(),
-    day: initialDate.getDate(),
-  });
-
-  const handlePrevMonth = () => {
-    if (activeMonth === 0) {
-      setActiveMonth(11);
-      setActiveYear((y) => y - 1);
-    } else {
-      setActiveMonth((m) => m - 1);
-    }
-  };
-
-  const handleNextMonth = () => {
-    if (activeMonth === 11) {
-      setActiveMonth(0);
-      setActiveYear((y) => y + 1);
-    } else {
-      setActiveMonth((m) => m + 1);
-    }
-  };
-
-  const daysInMonth = new Date(activeYear, activeMonth + 1, 0).getDate();
-  const firstDayWeekday = new Date(activeYear, activeMonth, 1).getDay();
-
-  const formatSelection = (y: number, m: number, d: number) => {
-    const monthShort = MONTH_NAMES[m];
-    return `${d} ${monthShort} ${y}`;
-  };
-
-  const handleSelectQuickPreset = (daysOffset: number) => {
-    const target = new Date();
-    target.setDate(target.getDate() + daysOffset);
-    setActiveYear(target.getFullYear());
-    setActiveMonth(target.getMonth());
-    setSelectedDate({
-      year: target.getFullYear(),
-      month: target.getMonth(),
-      day: target.getDate(),
-    });
-  };
-
-  const handleDayPress = (day: number) => {
-    setSelectedDate({
-      year: activeYear,
-      month: activeMonth,
-      day,
-    });
-  };
-
-  const handleConfirm = () => {
-    const formatted = formatSelection(
-      selectedDate.year,
-      selectedDate.month,
-      selectedDate.day
-    );
-    onSelectDate(formatted);
-    onRequestClose();
-  };
-
-  const sheetAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: translateY.get() }],
-  }));
-
-  return (
-    <TouchableWithoutFeedback onPress={onRequestClose}>
-      <View style={styles.overlay}>
-        <TouchableWithoutFeedback onPress={(e) => e.stopPropagation()}>
-          <Animated.View style={[styles.sheetContainer, sheetAnimatedStyle]}>
-            {/* Drag indicator */}
-            <View style={styles.dragPill} />
-
-            {/* Month / Year Navigator */}
-            <View style={styles.monthNav}>
-              <TouchableOpacity
-                activeOpacity={0.7}
-                onPress={handlePrevMonth}
-                style={styles.navArrow}
-              >
-                <ChevronLeft size={18} color={WIGO_COLORS.orangeGradientStart} strokeWidth={2.2} />
-              </TouchableOpacity>
-
-              <Text style={styles.monthYearTitle}>
-                {FULL_MONTH_NAMES[activeMonth]} {activeYear}
-              </Text>
-
-              <TouchableOpacity
-                activeOpacity={0.7}
-                onPress={handleNextMonth}
-                style={styles.navArrow}
-              >
-                <ChevronRight size={18} color={WIGO_COLORS.orangeGradientStart} strokeWidth={2.2} />
-              </TouchableOpacity>
-            </View>
-
-            {/* Weekday headers */}
-            <View style={styles.weekdayRow}>
-              {WEEKDAY_NAMES.map((wd) => (
-                <Text key={wd} style={styles.weekdayText}>
-                  {wd}
-                </Text>
-              ))}
-            </View>
-
-            {/* Days Grid */}
-            <View style={styles.daysGrid}>
-              {/* Empty cells before month starts */}
-              {Array.from({ length: firstDayWeekday }).map((_, i) => (
-                <View key={`empty-${i}`} style={styles.dayCell} />
-              ))}
-
-              {/* Day numbers */}
-              {Array.from({ length: daysInMonth }).map((_, i) => {
-                const day = i + 1;
-                const isSelected =
-                  selectedDate.year === activeYear &&
-                  selectedDate.month === activeMonth &&
-                  selectedDate.day === day;
-
-                return (
-                  <TouchableOpacity
-                    key={`day-${day}`}
-                    activeOpacity={0.7}
-                    onPress={() => handleDayPress(day)}
-                    style={[
-                      styles.dayCell,
-                      isSelected && styles.dayCellSelected,
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.dayText,
-                        isSelected && styles.dayTextSelected,
-                      ]}
-                    >
-                      {day}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-
-            {/* Footer Selected Display */}
-            <View style={styles.footer}>
-              <TouchableOpacity
-                activeOpacity={0.75}
-                onPress={() => handleSelectQuickPreset(0)}
-                style={styles.presetChip}
-              >
-                <Text style={styles.presetChipText}>Today</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                activeOpacity={0.8}
-                onPress={handleConfirm}
-                style={styles.confirmBtn}
-              >
-                <Check size={16} color="#FFFFFF" strokeWidth={2.4} />
-                <Text style={styles.confirmBtnText}>Set Date</Text>
-              </TouchableOpacity>
-            </View>
-          </Animated.View>
-        </TouchableWithoutFeedback>
-      </View>
-    </TouchableWithoutFeedback>
-  );
+    const parsed = new Date(currentDateText);
+    if (!isNaN(parsed.getTime())) return parsed;
+  }
+  return new Date();
 }
 
-export function WigoDatePickerSheet({
-  visible,
-  onClose,
-  currentDateText,
-  onSelectDate,
-}: WigoDatePickerSheetProps) {
+function formatDisplayDate(year: number, month: number, day: number): string {
+  const monthShort = MONTH_NAMES[month];
+  return `${day} ${monthShort} ${year}`;
+}
+
+// ============================================================================
+// 3. ANIMATION HOOK
+// ============================================================================
+
+function useSheetSlideAnimation(visible: boolean, onClose: () => void) {
   const [isRendered, setIsRendered] = useState(visible);
   const reducedMotion = useReducedMotion();
   const translateY = useSharedValue(visible ? 0 : ESTIMATED_SHEET_HEIGHT);
@@ -294,7 +128,7 @@ export function WigoDatePickerSheet({
       )
     );
 
-    // Safety fallback timer for web / interrupted animation frame
+    // Fallback safety timer for web / interrupted animation frame
     setTimeout(() => {
       finishClose();
     }, EXIT_DURATION + 60);
@@ -305,7 +139,6 @@ export function WigoDatePickerSheet({
     prevVisibleRef.current = visible;
 
     if (visible && !wasVisible) {
-      // Transition from closed -> open
       isClosingRef.current = false;
       isClosedRef.current = false;
       setIsRendered(true);
@@ -318,12 +151,222 @@ export function WigoDatePickerSheet({
         );
       }
     } else if (!visible && wasVisible) {
-      // Closed by parent
       if (isRendered && !isClosingRef.current) {
         animateClose();
       }
     }
   }, [visible, animateClose, isRendered, reducedMotion, translateY]);
+
+  const sheetAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: translateY.get() }],
+  }));
+
+  return {
+    isRendered,
+    sheetAnimatedStyle,
+    animateClose,
+  };
+}
+
+// ============================================================================
+// 4. SUB-COMPONENTS
+// ============================================================================
+
+interface MonthNavigatorProps {
+  activeMonth: number;
+  activeYear: number;
+  onPrevMonth: () => void;
+  onNextMonth: () => void;
+}
+
+function MonthNavigator({
+  activeMonth,
+  activeYear,
+  onPrevMonth,
+  onNextMonth,
+}: MonthNavigatorProps) {
+  return (
+    <View style={styles.monthNav}>
+      <TouchableOpacity
+        activeOpacity={0.7}
+        onPress={onPrevMonth}
+        style={styles.navArrow}
+      >
+        <ChevronLeft size={18} color={WIGO_COLORS.orangeGradientStart} strokeWidth={2.2} />
+      </TouchableOpacity>
+
+      <Text style={styles.monthYearTitle}>
+        {FULL_MONTH_NAMES[activeMonth]} {activeYear}
+      </Text>
+
+      <TouchableOpacity
+        activeOpacity={0.7}
+        onPress={onNextMonth}
+        style={styles.navArrow}
+      >
+        <ChevronRight size={18} color={WIGO_COLORS.orangeGradientStart} strokeWidth={2.2} />
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+function WeekdayHeaders() {
+  return (
+    <View style={styles.weekdayRow}>
+      {WEEKDAY_NAMES.map((wd) => (
+        <Text key={wd} style={styles.weekdayText}>
+          {wd}
+        </Text>
+      ))}
+    </View>
+  );
+}
+
+interface CalendarGridProps {
+  activeYear: number;
+  activeMonth: number;
+  selectedDate: SelectedDate;
+  onSelectDay: (day: number) => void;
+}
+
+function CalendarGrid({
+  activeYear,
+  activeMonth,
+  selectedDate,
+  onSelectDay,
+}: CalendarGridProps) {
+  const daysInMonth = new Date(activeYear, activeMonth + 1, 0).getDate();
+  const firstDayWeekday = new Date(activeYear, activeMonth, 1).getDay();
+
+  return (
+    <View style={styles.daysGrid}>
+      {/* Empty cells before month starts */}
+      {Array.from({ length: firstDayWeekday }).map((_, i) => (
+        <View key={`empty-${i}`} style={styles.dayCell} />
+      ))}
+
+      {/* Day numbers */}
+      {Array.from({ length: daysInMonth }).map((_, i) => {
+        const day = i + 1;
+        const isSelected =
+          selectedDate.year === activeYear &&
+          selectedDate.month === activeMonth &&
+          selectedDate.day === day;
+
+        return (
+          <TouchableOpacity
+            key={`day-${day}`}
+            activeOpacity={0.7}
+            onPress={() => onSelectDay(day)}
+            style={[styles.dayCell, isSelected && styles.dayCellSelected]}
+          >
+            <Text style={[styles.dayText, isSelected && styles.dayTextSelected]}>
+              {day}
+            </Text>
+          </TouchableOpacity>
+        );
+      })}
+    </View>
+  );
+}
+
+interface FooterActionsProps {
+  onSelectToday: () => void;
+  onConfirm: () => void;
+}
+
+function FooterActions({ onSelectToday, onConfirm }: FooterActionsProps) {
+  return (
+    <View style={styles.footer}>
+      <TouchableOpacity
+        activeOpacity={0.75}
+        onPress={onSelectToday}
+        style={styles.presetChip}
+      >
+        <Text style={styles.presetChipText}>Today</Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        activeOpacity={0.8}
+        onPress={onConfirm}
+        style={styles.confirmBtn}
+      >
+        <Check size={16} color="#FFFFFF" strokeWidth={2.4} />
+        <Text style={styles.confirmBtnText}>Set Date</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+// ============================================================================
+// 5. MAIN COMPONENT
+// ============================================================================
+
+export function WigoDatePickerSheet({
+  visible,
+  onClose,
+  currentDateText,
+  onSelectDate,
+}: WigoDatePickerSheetProps) {
+  const { isRendered, sheetAnimatedStyle, animateClose } = useSheetSlideAnimation(
+    visible,
+    onClose
+  );
+
+  const initialDate = useMemo(() => parseInitialDate(currentDateText), [currentDateText]);
+  const [activeYear, setActiveYear] = useState(initialDate.getFullYear());
+  const [activeMonth, setActiveMonth] = useState(initialDate.getMonth());
+  const [selectedDate, setSelectedDate] = useState<SelectedDate>({
+    year: initialDate.getFullYear(),
+    month: initialDate.getMonth(),
+    day: initialDate.getDate(),
+  });
+
+  const handlePrevMonth = () => {
+    if (activeMonth === 0) {
+      setActiveMonth(11);
+      setActiveYear((y) => y - 1);
+    } else {
+      setActiveMonth((m) => m - 1);
+    }
+  };
+
+  const handleNextMonth = () => {
+    if (activeMonth === 11) {
+      setActiveMonth(0);
+      setActiveYear((y) => y + 1);
+    } else {
+      setActiveMonth((m) => m + 1);
+    }
+  };
+
+  const handleSelectDay = (day: number) => {
+    setSelectedDate({
+      year: activeYear,
+      month: activeMonth,
+      day,
+    });
+  };
+
+  const handleSelectToday = () => {
+    const today = new Date();
+    setActiveYear(today.getFullYear());
+    setActiveMonth(today.getMonth());
+    setSelectedDate({
+      year: today.getFullYear(),
+      month: today.getMonth(),
+      day: today.getDate(),
+    });
+  };
+
+  const handleConfirm = () => {
+    const formatted = formatDisplayDate(
+      selectedDate.year,
+      selectedDate.month,
+      selectedDate.day
+    );
+    onSelectDate(formatted);
+    animateClose();
+  };
 
   if (!isRendered) return null;
 
@@ -334,21 +377,53 @@ export function WigoDatePickerSheet({
       animationType="none"
       onRequestClose={animateClose}
     >
-      <WigoDatePickerSheetContent
-        onRequestClose={animateClose}
-        onClose={onClose}
-        currentDateText={currentDateText}
-        onSelectDate={onSelectDate}
-        translateY={translateY}
-      />
+      <TouchableWithoutFeedback onPress={animateClose}>
+        <View style={styles.overlay}>
+          <TouchableWithoutFeedback onPress={(e) => e.stopPropagation()}>
+            <Animated.View style={[styles.sheetContainer, sheetAnimatedStyle]}>
+              {/* Drag indicator pill */}
+              <View style={styles.dragPill} />
+
+              {/* Month & Year Navigator */}
+              <MonthNavigator
+                activeMonth={activeMonth}
+                activeYear={activeYear}
+                onPrevMonth={handlePrevMonth}
+                onNextMonth={handleNextMonth}
+              />
+
+              {/* Weekday labels */}
+              <WeekdayHeaders />
+
+              {/* Day numbers grid */}
+              <CalendarGrid
+                activeYear={activeYear}
+                activeMonth={activeMonth}
+                selectedDate={selectedDate}
+                onSelectDay={handleSelectDay}
+              />
+
+              {/* Bottom action buttons */}
+              <FooterActions
+                onSelectToday={handleSelectToday}
+                onConfirm={handleConfirm}
+              />
+            </Animated.View>
+          </TouchableWithoutFeedback>
+        </View>
+      </TouchableWithoutFeedback>
     </Modal>
   );
 }
 
+// ============================================================================
+// 6. STYLES
+// ============================================================================
+
 const styles = StyleSheet.create({
+  // Modal & Sheet Container
   overlay: {
     flex: 1,
-    // backgroundColor: 'rgba(0, 0, 0, 0.72)',
     justifyContent: 'flex-end',
   },
   sheetContainer: {
@@ -369,18 +444,8 @@ const styles = StyleSheet.create({
     marginTop: 10,
     marginBottom: 6,
   },
-  presetChip: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: WIGO_COLORS.borderSubtle,
-  },
-  presetChipText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: WIGO_COLORS.textDark,
-  },
+
+  // Month & Year Navigation
   monthNav: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -399,11 +464,9 @@ const styles = StyleSheet.create({
     height: 32,
     alignItems: 'center',
     justifyContent: 'center',
-    // borderRadius: 8,
-    // backgroundColor: '#1B1C21',
-    // borderWidth: 1,
-    // borderColor: '#292B32',
   },
+
+  // Weekday Headers
   weekdayRow: {
     flexDirection: 'row',
     justifyContent: 'space-around',
@@ -417,6 +480,8 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#6E737D',
   },
+
+  // Days Grid & Day Cells
   daysGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -438,11 +503,16 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '500',
     color: WIGO_COLORS.textDark,
+    fontFamily: Platform.OS === 'web' ? 'Onest, sans-serif' : 'Onest_500Medium',
   },
   dayTextSelected: {
+    fontSize: 14,
     color: '#FFFFFF',
-    fontWeight: '700',
+    fontWeight: '900',
+    fontFamily: Platform.OS === 'web' ? 'Onest, sans-serif' : 'Onest_500Medium',
   },
+
+  // Footer & Action Buttons
   footer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -450,6 +520,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 12,
     marginTop: 6,
+  },
+  presetChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: WIGO_COLORS.borderSubtle,
+  },
+  presetChipText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: WIGO_COLORS.textDark,
   },
   confirmBtn: {
     flexDirection: 'row',
